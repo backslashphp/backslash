@@ -1,0 +1,53 @@
+{
+    "name": "backslashphp/backslash",
+    "type": "library",
+    "description": "CQRS and Event Sourcing infrastructure for modern PHP",
+    "homepage": "https://github.com/backslashphp/backslash",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Maxime Gosselin",
+            "email": "maxime.gosselin@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "ext-json": "*",
+        "ext-pdo": "*"
+    },
+    "require-dev": {
+        "ext-pdo_sqlite": "*",
+        "friendsofphp/php-cs-fixer": "^3",
+        "nunomaduro/collision": "^6",
+        "phpstan/phpstan": "^1",
+        "phpunit/phpunit": "^8 || ^9",
+        "psr/container": "^2",
+        "ramsey/uuid": "^4",
+        "squizlabs/php_codesniffer": "^3"
+    },
+    "suggest": {
+        "phpunit/phpunit": "PHPUnit is required by Scenario component"
+    },
+    "autoload": {
+        "psr-4": {
+            "Backslash\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Demo\\": "demo/src/",
+            "Demo\\Test\\": "demo/tests/",
+            "Backslash\\": "tests/"
+        }
+    },
+    "scripts": {
+        "format": "php-cs-fixer fix",
+        "scan": "phpstan analyse",
+        "style": "phpcs -p -s",
+        "test": "phpunit"
+    },
+    "config": {
+        "preferred-install": "dist",
+        "sort-packages": true
+    }
+}

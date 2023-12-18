@@ -1,0 +1,10 @@
+parameters:
+    level: 6
+    paths:
+        - src
+        - tests
+    ignoreErrors:
+        - '#Call to an undefined static method PHPUnit\\Framework\\Constraint\\Constraint::__construct\(\)#'
+        - '#is never read, only written#'
+    checkMissingIterableValueType: false
+    reportUnmatchedIgnoredErrors: true
