@@ -198,24 +198,32 @@ final class PdoEventStoreAdapter implements AdapterInterface
 
     public function inspect(InspectorInterface $inspector): void
     {
-        $reverse = $inspector->getFilter()->isReverse();
-        $max = $inspector->getFilter()->getLimit();
-        $filteredEvents = $inspector->getFilter()->getClasses();
+        $reverse = (bool) $inspector->getFilter()->getParam('reverse');
+        $upToSequence = (int) $inspector->getFilter()->getParam('up_to_sequence');
+        $afterSequence = (int) $inspector->getFilter()->getParam('after_sequence');
+        $limit = (int) $inspector->getFilter()->getParam('limit');
+        $filteredEvents = $inspector->getFilter()->getEventClasses();
 
+        $whereClause = 'where 1=1';
         if (count($filteredEvents)) {
             $questionMarks = str_repeat('?,', count($filteredEvents) - 1) . '?';
-            $whereClause = sprintf(
-                'where `%s` in (%s)',
+            $whereClause .= sprintf(
+                ' and `%s` in (%s)',
                 $this->config->getAlias('event_class'),
                 $questionMarks,
             );
-        } else {
-            $whereClause = '';
         }
 
-        $limitClause = $max ? 'limit ' . $max : '';
+        if ($upToSequence && !$reverse && !$afterSequence) {
+            $whereClause .= sprintf(' and (`%s` <= %d)', $this->config->getAlias('sequence'), $upToSequence);
+        }
+        if ($afterSequence && !$reverse && !$upToSequence) {
+            $whereClause .= sprintf(' and (`%s` > %d)', $this->config->getAlias('sequence'), $afterSequence);
+        }
+
+        $limitClause = $limit ? 'limit ' . $limit : '';
         $sql = sprintf(
-            'select * from `%s` %s order by `%s` %s %s',
+            'select * from %s %s order by %s %s %s',
             $this->config->getTable(),
             $whereClause,
             $this->config->getAlias('sequence'),

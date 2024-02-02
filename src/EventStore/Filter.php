@@ -4,41 +4,44 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore;
 
-use RuntimeException;
-
 final class Filter
 {
     /** @var string[] */
-    private array $onlyClasses = [];
+    private array $eventClasses;
 
-    private bool $reverse;
+    private array $params = [];
 
-    private int $limit;
-
-    public function __construct(bool $reverse = false, int $limit = 0, string ...$onlyClasses)
+    public function __construct(string ...$eventClasses)
     {
-        $this->reverse = $reverse;
-        $this->limit = $limit;
-        foreach ($onlyClasses as $class) {
-            if (!class_exists($class)) {
-                throw new RuntimeException('Class not found.');
-            }
-        }
-        $this->onlyClasses = $onlyClasses;
+        $this->eventClasses = $eventClasses;
     }
 
-    public function isReverse(): bool
+    public function getEventClasses(): array
     {
-        return $this->reverse;
+        return $this->eventClasses;
     }
 
-    public function getLimit(): int
+    public function hasParam(string $key): bool
     {
-        return $this->limit;
+        return array_key_exists($key, $this->params);
     }
 
-    public function getClasses(): array
+    public function getParam(string $key, mixed $fallbackValue = null): mixed
     {
-        return $this->onlyClasses;
+        return $this->params[$key] ?? $fallbackValue;
+    }
+
+    public function withParam(string $key, mixed $value): self
+    {
+        $clone = clone $this;
+        $clone->params[$key] = $value;
+        return $clone;
+    }
+
+    public function withoutParam(string $key): self
+    {
+        $clone = clone $this;
+        unset($clone->params[$key]);
+        return $clone;
     }
 }

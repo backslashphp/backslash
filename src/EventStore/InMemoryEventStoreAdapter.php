@@ -6,7 +6,6 @@ namespace Backslash\EventStore;
 
 use Backslash\Aggregate\RecordedEvent;
 use Backslash\Aggregate\Stream;
-use RuntimeException;
 
 final class InMemoryEventStoreAdapter implements AdapterInterface
 {
@@ -103,17 +102,15 @@ final class InMemoryEventStoreAdapter implements AdapterInterface
 
     public function inspect(InspectorInterface $inspector): void
     {
-        if ($inspector->getFilter()->isReverse() || $inspector->getFilter()->getLimit()) {
-            throw new RuntimeException('Not implemented.');
-        }
+        $filteredEvents = $inspector->getFilter()->getEventClasses();
         foreach ($this->chronologicalIndex as $pair) {
             $key = $pair[0];
             $version = $pair[1];
             /** @var RecordedEvent $recordedEvent */
             $recordedEvent = $this->storage[$key]['recordedEvents'][$version];
             if (
-                empty($inspector->getFilter()->getClasses())
-                || in_array($recordedEvent->getEvent()::class, $inspector->getFilter()->getClasses())
+                empty($filteredEvents)
+                || in_array($recordedEvent->getEvent()::class, $filteredEvents)
             ) {
                 $inspector->inspect($this->storage[$key]['id'], $this->storage[$key]['type'], $recordedEvent);
             }
