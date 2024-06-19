@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Backslash\EventStoreReductionInspection;
 
-use Backslash\Aggregate\Metadata;
-use Backslash\Aggregate\RecordedEvent;
-use Backslash\Aggregate\Stream;
+use Backslash\Clock\Clock;
+use Backslash\Domain\Metadata;
+use Backslash\Domain\RecordedEvent;
+use Backslash\Domain\RecordedEventStream;
 use Backslash\EventStore\EventStore;
-use Backslash\EventStore\InMemoryEventStoreAdapter;
+use Backslash\Shared\Event\CourseCreatedEvent;
+use Backslash\Shared\Event\StudentRegisteredEvent;
+use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
 use PHPUnit\Framework\TestCase;
 
 class ReductionTest extends TestCase
@@ -16,15 +19,13 @@ class ReductionTest extends TestCase
     /** @test */
     public function it_reduces_events(): void
     {
-        $eventStore = new EventStore(new InMemoryEventStoreAdapter());
-        $eventStore->append(
-            (new Stream('123', 'type'))
-                ->withRecordedEvent(RecordedEvent::createNow(new TestEvent(), new Metadata(), 1))
-                ->withRecordedEvent(RecordedEvent::createNow(new TestEvent(), new Metadata(), 2))
-                ->withRecordedEvent(RecordedEvent::createNow(new TestEvent(), new Metadata(), 3)),
-        );
+        $eventStore = new EventStore(InMemorySqlitePdoEventStoreFactory::build());
+        $eventStore->append(new RecordedEventStream(
+            RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
+            RecordedEvent::create(new CourseCreatedEvent('A', 'FR101', 'French 101'), new Metadata(), Clock::now()),
+        ), null, null);
         $reduction = new EventStoreReductionInspection($eventStore->getAdapter());
 
-        $this->assertEquals(3, $reduction->inspect(new TestReducer()));
+        $this->assertEquals(2, $reduction->inspect(new TestReducer()));
     }
 }

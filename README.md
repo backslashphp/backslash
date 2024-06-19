@@ -1,14 +1,14 @@
-# Backslash
+# Backslash 2.x
 
 [![Latest Version](https://img.shields.io/github/release/backslashphp/backslash.svg)](https://github.com/backslashphp/backslash/releases)
 [![Composer](https://img.shields.io/badge/composer-backslashphp/backslash-lightgray)](https://packagist.org/packages/backslashphp/backslash)
 ![PHP](https://img.shields.io/packagist/php-v/backslashphp/backslash)
 [![Software License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Modern and opinionated PHP library designed to facilitate the integration of DDD, CQRS, and Event Sourcing patterns in
+Modern and opinionated PHP library designed to facilitate the integration of CQRS and Event Sourcing patterns in
 your application.
 
-**Domain-centric** — Implement complex domain logic using aggregates and events.
+**Domain-centric** — Implement complex business logic using domain events.
 
 **Event-driven** — Efficiently compute query models and initiate actions based on domain events.
 
@@ -31,7 +31,7 @@ A [demo application](https://github.com/backslashphp/demo) is also available for
 Add Backslash to your project with [Composer](https://getcomposer.org/):
 
 ```bash
-composer require backslashphp/backslash
+composer require backslashphp/backslash:^2
 ```
 
 ## Requirements

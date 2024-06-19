@@ -11,7 +11,7 @@ use Backslash\ProjectionStore\ProjectionStoreInterface;
 final class ProjectionStoreTraceMiddleware implements MiddlewareInterface
 {
     /** @var ProjectionInterface[] */
-    private array $traceStack = [];
+    private array $trace = [];
 
     private bool $tracing = false;
 
@@ -62,7 +62,7 @@ final class ProjectionStoreTraceMiddleware implements MiddlewareInterface
             return;
         }
         $this->tracing = true;
-        $this->traceStack = [];
+        $this->trace = [];
     }
 
     public function stopTracing(): void
@@ -72,7 +72,7 @@ final class ProjectionStoreTraceMiddleware implements MiddlewareInterface
 
     public function clearTrace(): void
     {
-        $this->traceStack = [];
+        $this->trace = [];
     }
 
     public function isTracing(): bool
@@ -83,13 +83,13 @@ final class ProjectionStoreTraceMiddleware implements MiddlewareInterface
     /** @return ProjectionInterface[] */
     public function getTracedProjections(): array
     {
-        return array_values($this->traceStack);
+        return array_values($this->trace);
     }
 
     private function addOrReplaceProjection(ProjectionInterface $projection): void
     {
         $key = self::resolveKey($projection->getId(), $projection::class);
-        $this->traceStack[$key] = $projection;
+        $this->trace[$key] = $projection;
     }
 
     private static function resolveKey(string $id, string $class): string
@@ -100,6 +100,6 @@ final class ProjectionStoreTraceMiddleware implements MiddlewareInterface
     private function removeProjection(string $id, string $class): void
     {
         $key = self::resolveKey($id, $class);
-        unset($this->traceStack[$key]);
+        unset($this->trace[$key]);
     }
 }

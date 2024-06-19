@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Backslash\Scenario;
 
-use Backslash\Aggregate\Stream;
 use Backslash\CommandDispatcher\DispatcherInterface;
+use Backslash\Domain\RecordedEventStream;
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStoreInterface;
 use Exception;
 
 final class Play
 {
-    /** @var array<Stream|callable> */
-    private array $initialStreams = [];
+    /** @var RecordedEventStream|callable|null */
+    private mixed $initialEvents = null;
 
     /** @var array<object|callable> */
     private array $initialCommands = [];
@@ -35,12 +35,12 @@ final class Play
 
     private ?string $expectedException = null;
 
-    public function withInitialEvents(Stream|callable ...$streams): self
+    private ?string $expectedExceptionMessage = null;
+
+    public function withInitialEvents(RecordedEventStream|callable $stream): self
     {
         $clone = clone $this;
-        foreach ($streams as $stream) {
-            $clone->initialStreams[] = $stream;
-        }
+        $clone->initialEvents = $stream;
         return $clone;
     }
 
@@ -97,6 +97,13 @@ final class Play
         return $clone;
     }
 
+    public function expectExceptionMessage(string $message): self
+    {
+        $clone = clone $this;
+        $clone->expectedExceptionMessage = $message;
+        return $clone;
+    }
+
     public function run(
         EventBusInterface $eventBus,
         EventBusTraceMiddleware $eventBusTrace,
@@ -104,15 +111,15 @@ final class Play
         DispatcherInterface $dispatcher,
         ProjectionStoreTraceMiddleware $projectionTrace,
     ): void {
-        $catchedExceptions = [];
-        $expectedExceptionThrown = false;
+        $expectedExceptionClassThrown = false;
+        $expectedExceptionMessageThrown = false;
 
         $eventBusTrace->stopTracing();
         $projectionTrace->stopTracing();
 
-        foreach ($this->initialStreams as $stream) {
-            $eventStore->append($this->evaluate($stream));
-            $eventBus->publish($this->evaluate($stream));
+        if ($this->initialEvents) {
+            $eventStore->append($this->evaluate($this->initialEvents), null, null);
+            $eventBus->publish($this->evaluate($this->initialEvents));
         }
         foreach ($this->initialCommands as $command) {
             $dispatcher->dispatch($this->evaluate($command));
@@ -126,9 +133,16 @@ final class Play
             try {
                 $dispatcher->dispatch($this->evaluate($command));
             } catch (Exception $e) {
+                $catched = false;
                 if ($this->expectedException && ($e instanceof $this->expectedException)) {
-                    $expectedExceptionThrown = true;
-                } else {
+                    $expectedExceptionClassThrown = true;
+                    $catched = true;
+                }
+                if ($e->getMessage() ===  $this->expectedExceptionMessage) {
+                    $expectedExceptionMessageThrown = true;
+                    $catched = true;
+                }
+                if (!$catched) {
                     throw $e;
                 }
             }
@@ -137,24 +151,38 @@ final class Play
             try {
                 $action();
             } catch (Exception $e) {
+                $catched = false;
                 if ($this->expectedException && ($e instanceof $this->expectedException)) {
-                    $expectedExceptionThrown = true;
-                } else {
+                    $expectedExceptionClassThrown = true;
+                    $catched = true;
+                }
+                if ($e->getMessage() ===  $this->expectedExceptionMessage) {
+                    $expectedExceptionMessageThrown = true;
+                    $catched = true;
+                }
+                if (!$catched) {
                     throw $e;
                 }
             }
         }
 
         /* Assert expected exception was thrown */
-        if ($this->expectedException && !$expectedExceptionThrown) {
-            throw new ExpectedExceptionWasNotThrownException($this->expectedException);
+        if ($this->expectedException && !$expectedExceptionClassThrown) {
+            throw new ExpectedExceptionWasNotThrownException(
+                sprintf('Exception %s was expected to be thrown.', $this->expectedException),
+            );
+        }
+        if ($this->expectedExceptionMessage && !$expectedExceptionMessageThrown) {
+            throw new ExpectedExceptionMessageWasNotThrownException(
+                sprintf('An exception with message "%s" was expected to be thrown.', $this->expectedExceptionMessage),
+            );
         }
 
         /* Assertions */
-        $publishedStreams = $eventBusTrace->getTracedEventStreams();
+        $publishedStreams = $eventBusTrace->getTracedEvents();
         $eventBusTrace->clearTrace();
         foreach ($this->eventsAssertions as $assertion) {
-            $assertion(new PublishedStreams($publishedStreams));
+            $assertion(new PublishedEvents($publishedStreams));
         }
         $updatedProjections = $projectionTrace->getTracedProjections();
         $projectionTrace->clearTrace();

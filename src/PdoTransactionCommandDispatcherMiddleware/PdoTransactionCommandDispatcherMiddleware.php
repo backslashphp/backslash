@@ -16,10 +16,8 @@ final class PdoTransactionCommandDispatcherMiddleware implements MiddlewareInter
 
     private int $nestedLevels;
 
-    /** @var string[] */
     private array $safeExceptions;
 
-    /** @var Throwable[] */
     private array $deferredExceptions = [];
 
     public function __construct(PdoInterface $pdo, string ...$safeExceptions)

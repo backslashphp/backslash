@@ -4,22 +4,14 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
+use Backslash\EventStore\Query\QueryInterface;
 
 interface MiddlewareInterface
 {
-    public function fetch(
-        string $aggregateId,
-        string $aggregateType,
-        int $fromVersion,
-        EventStoreInterface $next,
-    ): Stream;
+    public function fetch(?QueryInterface $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream;
 
-    public function streamExists(string $aggregateId, string $aggregateType, EventStoreInterface $next): bool;
-
-    public function getVersion(string $aggregateId, string $aggregateType, EventStoreInterface $next): int;
-
-    public function append(Stream $stream, ?int $expectedVersion, EventStoreInterface $next): void;
+    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void;
 
     public function inspect(InspectorInterface $inspector, EventStoreInterface $next): void;
 

@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
+use Backslash\EventStore\Query\QueryInterface;
 
 class TestMiddleware implements MiddlewareInterface
 {
@@ -18,34 +19,18 @@ class TestMiddleware implements MiddlewareInterface
         $this->output = &$output;
     }
 
-    public function fetch(string $aggregateId, string $aggregateType, int $fromVersion, EventStoreInterface $next): Stream
+    public function fetch(?QueryInterface $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
     {
         $this->output[] = 'before fetch ' . $this->name;
-        $stream = $next->fetch($aggregateId, $aggregateType, $fromVersion);
+        $stream = $next->fetch($query, $fromSequence);
         $this->output[] = 'after fetch ' . $this->name;
         return $stream;
     }
 
-    public function streamExists(string $aggregateId, string $aggregateType, EventStoreInterface $next): bool
-    {
-        $this->output[] = 'before streamExists ' . $this->name;
-        $exists = $next->streamExists($aggregateId, $aggregateType);
-        $this->output[] = 'after streamExists ' . $this->name;
-        return $exists;
-    }
-
-    public function getVersion(string $aggregateId, string $aggregateType, EventStoreInterface $next): int
-    {
-        $this->output[] = 'before getVersion ' . $this->name;
-        $version = $next->getVersion($aggregateId, $aggregateType);
-        $this->output[] = 'after getVersion ' . $this->name;
-        return $version;
-    }
-
-    public function append(Stream $stream, ?int $expectedVersion, EventStoreInterface $next): void
+    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
     {
         $this->output[] = 'before append ' . $this->name;
-        $next->append($stream, $expectedVersion);
+        $next->append($stream, $concurrencyCheck, $expectedSequence);
         $this->output[] = 'after append ' . $this->name;
     }
 

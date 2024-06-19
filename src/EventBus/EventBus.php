@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
 
 final class EventBus implements EventBusInterface
 {
@@ -34,7 +34,7 @@ final class EventBus implements EventBusInterface
         return $this->middlewares;
     }
 
-    public function publish(Stream $stream): void
+    public function publish(RecordedEventStream $stream): void
     {
         if (!$this->chain) {
             $this->chainMiddlewares();

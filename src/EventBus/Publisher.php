@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Aggregate\RecordedEvent;
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEvent;
+use Backslash\Domain\RecordedEventStream;
 
 final class Publisher implements EventStreamPublisherInterface
 {
     /** @var EventHandlerInterface[][] */
     private array $subscribers = [];
 
-    public function publish(Stream $stream): void
+    public function publish(RecordedEventStream $stream): void
     {
         $recordedEvents = $stream->getRecordedEvents();
         foreach ($recordedEvents as $recordedEvent) {
-            $this->notifySubscribers($stream->getAggregateId(), $recordedEvent);
+            $this->forwardToSubscribers($recordedEvent);
         }
     }
 
@@ -28,11 +28,11 @@ final class Publisher implements EventStreamPublisherInterface
         $this->subscribers[$eventClass][] = $subscriber;
     }
 
-    private function notifySubscribers(string $aggregateId, RecordedEvent $recordedEvent): void
+    private function forwardToSubscribers(RecordedEvent $recordedEvent): void
     {
         $subscribers = $this->resolveSubscribers($recordedEvent);
         foreach ($subscribers as $subscriber) {
-            $subscriber->handle($aggregateId, $recordedEvent);
+            $subscriber->handle($recordedEvent);
         }
     }
 

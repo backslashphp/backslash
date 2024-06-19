@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\PdoEventStore;
 
-use Backslash\Aggregate\EventInterface;
+use Backslash\Domain\EventInterface;
 use Backslash\Serializer\AdapterInterface;
 use Backslash\Serializer\DeserializationException;
 use InvalidArgumentException;
@@ -15,6 +15,9 @@ class JsonEventSerializer implements AdapterInterface
     {
         if (!$value instanceof EventInterface) {
             throw new InvalidArgumentException();
+        }
+        if (empty($value->toArray())) {
+            return '{}';
         }
         return json_encode($value->toArray());
     }

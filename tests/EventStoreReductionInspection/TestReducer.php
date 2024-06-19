@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Backslash\EventStoreReductionInspection;
 
-use Backslash\Aggregate\RecordedEvent;
-use Backslash\EventStore\Filter;
+use Backslash\Domain\RecordedEvent;
+use Backslash\EventStore\Query\QueryInterface;
 
 class TestReducer implements ReductionInspectorInterface
 {
     private int $eventCount = 0;
 
-    public function getFilter(): Filter
+    public function getQuery(): ?QueryInterface
     {
-        return new Filter();
+        return null;
     }
 
-    public function inspect(string $aggregateId, string $aggregateType, RecordedEvent $recordedEvent): void
+    public function inspect(RecordedEvent $recordedEvent): void
     {
         $this->eventCount++;
     }

@@ -4,71 +4,76 @@ declare(strict_types=1);
 
 namespace Backslash\Scenario;
 
+use Backslash\Scenario\Constraint\ProjectionsMustContain;
 use Backslash\Scenario\Constraint\ProjectionsMustContainExactly;
 use Backslash\Scenario\Constraint\ProjectionsMustContainOnly;
 use Backslash\Scenario\Constraint\ProjectionsMustCount;
-use Backslash\Scenario\Constraint\ProjectionsMustNotContain;
-use Backslash\Scenario\Constraint\StreamMustExist;
-use Backslash\Scenario\Constraint\StreamsMustContain;
-use Backslash\Scenario\Constraint\StreamsMustContainExactly;
-use Backslash\Scenario\Constraint\StreamsMustCount;
+use Backslash\Scenario\Constraint\StreamMustContain;
+use Backslash\Scenario\Constraint\StreamMustContainExactly;
+use Backslash\Scenario\Constraint\StreamMustContainOnly;
+use Backslash\Scenario\Constraint\StreamMustCount;
 
 trait AssertionsTrait
 {
-    public static function assertPublishedStreamWithId(string $aggregateId, PublishedStreams $publishedStreams): void
+    public static function assertPublishedEventsContain(string $eventFqcn, PublishedEvents $publishedEvents): void
     {
-        self::assertThat($publishedStreams, new StreamMustExist($aggregateId));
+        self::assertThat($publishedEvents, new StreamMustContain($eventFqcn));
     }
 
-    public static function assertPublishedStreamsDoNotContain(
+    public static function assertPublishedEventsContainOnly(string $eventFqcn, PublishedEvents $publishedEvents): void
+    {
+        self::assertThat($publishedEvents, new StreamMustContainOnly($eventFqcn));
+    }
+
+    public static function assertPublishedEventsContainExactly(
+        array $eventFqcnAndCount,
+        PublishedEvents $publishedEvents,
+    ): void {
+        foreach ($eventFqcnAndCount as $fqcn => $count) {
+            self::assertThat($publishedEvents, new StreamMustContainExactly($count, $fqcn));
+        }
+    }
+
+    public static function assertPublishedEventsDoNotContain(
         string $eventClass,
-        PublishedStreams $publishedStreams,
+        PublishedEvents $publishedEvents,
     ): void {
-        self::assertPublishedStreamsContainExactly([$eventClass => 0], $publishedStreams);
+        self::assertPublishedEventsContainExactly([$eventClass => 0], $publishedEvents);
     }
 
-    public static function assertPublishedStreamsContainExactly(
-        array $eventsAndCount,
-        PublishedStreams $publishedStreams,
+    public static function assertPublishedEventsCount(int $count, PublishedEvents $publishedEvents): void
+    {
+        self::assertThat($publishedEvents, new StreamMustCount($count));
+    }
+
+    public static function assertUpdatedProjectionsContain(
+        string $projectionFqcn,
+        UpdatedProjections $updatedProjections,
     ): void {
-        foreach ($eventsAndCount as $event => $count) {
-            self::assertThat($publishedStreams, new StreamsMustContainExactly($count, $event));
-        }
+        self::assertThat($updatedProjections, new ProjectionsMustContain($projectionFqcn));
     }
 
-    public static function assertPublishedStreamsContains(string $eventClass, PublishedStreams $publishedStreams): void
-    {
-        foreach ((array) $eventClass as $event) {
-            self::assertThat($publishedStreams, new StreamsMustContain($event));
-        }
-    }
-
-    public static function assertPublishedStreamsCount(int $count, PublishedStreams $publishedStreams): void
-    {
-        self::assertThat($publishedStreams, new StreamsMustCount($count));
+    public static function assertUpdatedProjectionsContainOnly(
+        string $projectionFqcn,
+        UpdatedProjections $updatedProjections,
+    ): void {
+        self::assertThat($updatedProjections, new ProjectionsMustContainOnly($projectionFqcn));
     }
 
     public static function assertUpdatedProjectionsContainExactly(
-        array $projectionsAndCount,
+        array $projectionFqcnAndCount,
         UpdatedProjections $updatedProjections,
     ): void {
-        foreach ($projectionsAndCount as $projection => $count) {
-            self::assertThat($updatedProjections, new ProjectionsMustContainExactly($count, $projection));
+        foreach ($projectionFqcnAndCount as $fqcn => $count) {
+            self::assertThat($updatedProjections, new ProjectionsMustContainExactly($count, $fqcn));
         }
     }
 
     public static function assertUpdatedProjectionsDoNotContain(
-        string $projectionClass,
+        string $projectionFqcn,
         UpdatedProjections $updatedProjections,
     ): void {
-        self::assertThat($updatedProjections, new ProjectionsMustNotContain($projectionClass));
-    }
-
-    public static function assertUpdatedProjectionsContainOnly(
-        string $projectionClass,
-        UpdatedProjections $updatedProjections,
-    ): void {
-        self::assertThat($updatedProjections, new ProjectionsMustContainOnly($projectionClass));
+        self::assertUpdatedProjectionsContainExactly([$projectionFqcn => 0], $updatedProjections);
     }
 
     public static function assertUpdatedProjectionsCount(int $count, UpdatedProjections $updatedProjections): void

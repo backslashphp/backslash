@@ -10,7 +10,6 @@ final class Config
 {
     private string $table = 'projection_store';
 
-    /** @var string[] */
     private array $aliases = [
         'projection_id' => 'projection_id',
         'projection_class' => 'projection_class',

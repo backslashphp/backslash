@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Backslash\StreamEnricher;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
 
 interface StreamEnricherInterface
 {
-    public function enrich(Stream $stream): Stream;
+    public function enrich(RecordedEventStream $stream): RecordedEventStream;
 }

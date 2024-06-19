@@ -4,22 +4,26 @@ declare(strict_types=1);
 
 namespace Backslash\Scenario;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
 use Backslash\EventBus\EventStreamPublisherInterface;
 use Backslash\EventBus\MiddlewareInterface;
 
 final class EventBusTraceMiddleware implements MiddlewareInterface
 {
-    /** @var Stream[] */
-    private array $traceStack = [];
+    private RecordedEventStream $trace;
 
     private bool $tracing = false;
 
-    public function publish(Stream $stream, EventStreamPublisherInterface $next): void
+    public function __construct()
+    {
+        $this->trace = new RecordedEventStream();
+    }
+
+    public function publish(RecordedEventStream $stream, EventStreamPublisherInterface $next): void
     {
         $next->publish($stream);
         if ($this->tracing) {
-            $this->traceStack[] = $stream;
+            $this->trace = $this->trace->withRecordedEvents(...$stream->getRecordedEvents());
         }
     }
 
@@ -29,7 +33,7 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
             return;
         }
         $this->tracing = true;
-        $this->traceStack = [];
+        $this->trace = new RecordedEventStream();
     }
 
     public function stopTracing(): void
@@ -39,7 +43,7 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
 
     public function clearTrace(): void
     {
-        $this->traceStack = [];
+        $this->trace = new RecordedEventStream();
     }
 
     public function isTracing(): bool
@@ -47,9 +51,8 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
         return $this->tracing;
     }
 
-    /** @return Stream[] */
-    public function getTracedEventStreams(): array
+    public function getTracedEvents(): RecordedEventStream
     {
-        return $this->traceStack;
+        return $this->trace;
     }
 }

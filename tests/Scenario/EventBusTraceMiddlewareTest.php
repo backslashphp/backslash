@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Backslash\Scenario;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Clock\Clock;
+use Backslash\Domain\Metadata;
+use Backslash\Domain\RecordedEvent;
+use Backslash\Domain\RecordedEventStream;
 use Backslash\EventBus\EventBus;
+use Backslash\Shared\Event\StudentRegisteredEvent;
 use PHPUnit\Framework\TestCase;
 
 class EventBusTraceMiddlewareTest extends TestCase
@@ -18,9 +22,11 @@ class EventBusTraceMiddlewareTest extends TestCase
 
         $eventBus = new EventBus();
         $eventBus->addMiddleware($trace);
-        $eventBus->publish(new Stream('id', 'type'));
+        $eventBus->publish(new RecordedEventStream(
+            RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
+        ));
 
-        $this->assertEmpty($trace->getTracedEventStreams());
+        $this->assertEmpty($trace->getTracedEvents());
     }
 
     /** @test */
@@ -31,12 +37,14 @@ class EventBusTraceMiddlewareTest extends TestCase
 
         $eventBus = new EventBus();
         $eventBus->addMiddleware($trace);
-        $eventBus->publish(new Stream('id', 'type'));
+        $eventBus->publish(new RecordedEventStream(
+            RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
+        ));
 
-        $this->assertCount(1, $trace->getTracedEventStreams());
+        $this->assertCount(1, $trace->getTracedEvents());
 
         $trace->clearTrace();
-        $this->assertEmpty($trace->getTracedEventStreams());
+        $this->assertEmpty($trace->getTracedEvents());
     }
 
     /** @test */

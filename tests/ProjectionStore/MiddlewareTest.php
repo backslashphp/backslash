@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\ProjectionStore;
 
+use Backslash\Shared\Projection\TestFooProjection;
 use PHPUnit\Framework\TestCase;
 
 class MiddlewareTest extends TestCase
@@ -18,7 +19,7 @@ class MiddlewareTest extends TestCase
         $store->addMiddleware(new TestMiddleware('mw2', $output));
         $store->addMiddleware(new TestMiddleware('mw3', $output));
 
-        $store->store(new TestProjection('123'));
+        $store->store(new TestFooProjection('123'));
         $this->assertEquals(
             $output,
             [
@@ -32,7 +33,7 @@ class MiddlewareTest extends TestCase
         );
         $output = [];
 
-        $store->has('123', TestProjection::class);
+        $store->has('123', TestFooProjection::class);
         $this->assertEquals(
             $output,
             [
@@ -46,7 +47,7 @@ class MiddlewareTest extends TestCase
         );
         $output = [];
 
-        $store->find('123', TestProjection::class);
+        $store->find('123', TestFooProjection::class);
         $this->assertEquals(
             $output,
             [
@@ -60,7 +61,7 @@ class MiddlewareTest extends TestCase
         );
         $output = [];
 
-        $store->remove('123', TestProjection::class);
+        $store->remove('123', TestFooProjection::class);
         $this->assertEquals(
             $output,
             [

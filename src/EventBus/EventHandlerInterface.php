@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Aggregate\RecordedEvent;
+use Backslash\Domain\RecordedEvent;
 
 interface EventHandlerInterface
 {
-    public function handle(string $aggregateId, RecordedEvent $recordedEvent): void;
+    public function handle(RecordedEvent $recordedEvent): void;
 }

@@ -20,16 +20,21 @@ final class ProjectionsMustCount extends Constraint
         $this->count = $count;
     }
 
-    public function toString(): string
-    {
-        return "must have {$this->count} projection(s)";
-    }
-
     /**
      * @param UpdatedProjections $updatedProjections
      */
     public function matches($updatedProjections): bool
     {
         return count($updatedProjections) === $this->count;
+    }
+
+    public function toString(): string
+    {
+        return "must count {$this->count} projection(s)";
+    }
+
+    protected function failureDescription($other): string
+    {
+        return 'updated projections ' . $this->toString();
     }
 }

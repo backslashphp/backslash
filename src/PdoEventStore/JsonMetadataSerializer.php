@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\PdoEventStore;
 
-use Backslash\Aggregate\Metadata;
+use Backslash\Domain\Metadata;
 use Backslash\Serializer\AdapterInterface;
 use Backslash\Serializer\DeserializationException;
 use InvalidArgumentException;
@@ -16,10 +16,13 @@ class JsonMetadataSerializer implements AdapterInterface
         if (!$value instanceof Metadata) {
             throw new InvalidArgumentException();
         }
+        if (empty($value->toArray())) {
+            return '{}';
+        }
         return json_encode($value->toArray());
     }
 
-    public function deserialize(string $payload, ?string $type = null): mixed
+    public function deserialize(string $payload, ?string $type = null): Metadata
     {
         $array = json_decode($payload, true);
         if (json_last_error()) {

@@ -4,26 +4,15 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
+use Backslash\EventStore\Query\QueryInterface;
 
 interface EventStoreInterface
 {
-    /**
-     * @throws StreamNotFoundException if no stream was found.
-     */
-    public function fetch(string $aggregateId, string $aggregateType, int $fromVersion = 0): Stream;
+    public function fetch(?QueryInterface $query, int $fromSequence = 0): StoredRecordedEventStream;
 
-    public function streamExists(string $aggregateId, string $aggregateType): bool;
-
-    /**
-     * @throws StreamNotFoundException if no stream was found.
-     */
-    public function getVersion(string $aggregateId, string $aggregateType): int;
-
-    /**
-     * @throws ConcurrencyException
-     */
-    public function append(Stream $stream, ?int $expectedVersion = null): void;
+    /** @throws ConcurrencyException */
+    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence): void;
 
     public function inspect(InspectorInterface $inspector): void;
 

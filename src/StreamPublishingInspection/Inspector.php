@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Backslash\StreamPublishingInspection;
 
-use Backslash\Aggregate\RecordedEvent;
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEvent;
+use Backslash\Domain\RecordedEventStream;
 use Backslash\EventBus\EventBusInterface;
-use Backslash\EventStore\Filter;
 use Backslash\EventStore\InspectorInterface;
+use Backslash\EventStore\Query\QueryInterface;
 
 final class Inspector implements InspectorInterface
 {
@@ -27,23 +27,23 @@ final class Inspector implements InspectorInterface
         $this->after = $after;
     }
 
-    public function getFilter(): Filter
+    public function getQuery(): ?QueryInterface
     {
-        return new Filter();
+        return null;
     }
 
-    public function inspect(string $aggregateId, string $aggregateType, RecordedEvent $recordedEvent): void
+    public function inspect(RecordedEvent $recordedEvent): void
     {
-        $stream = new Stream($aggregateId, $aggregateType);
-        $stream = $stream->withRecordedEvent($recordedEvent);
+        $stream = new RecordedEventStream();
+        $stream = $stream->withRecordedEvents($recordedEvent);
         if ($this->before) {
             $before = $this->before;
-            $before($aggregateId, $recordedEvent);
+            $before($recordedEvent);
         }
         $this->eventBus->publish($stream);
         if ($this->after) {
             $after = $this->after;
-            $after($aggregateId, $recordedEvent);
+            $after($recordedEvent);
         }
     }
 }

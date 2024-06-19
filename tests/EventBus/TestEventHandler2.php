@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Aggregate\RecordedEvent;
-use Backslash\Aggregate\EventInterface;
+use Backslash\Domain\EventInterface;
+use Backslash\Domain\RecordedEvent;
+use Backslash\Shared\Event\StudentNameChangedEvent;
 
 class TestEventHandler2 implements EventHandlerInterface
 {
@@ -17,7 +18,7 @@ class TestEventHandler2 implements EventHandlerInterface
     public static function getSubscribedEventClasses(): array
     {
         return [
-            TestEvent2::class,
+            StudentNameChangedEvent::class,
         ];
     }
 
@@ -27,7 +28,7 @@ class TestEventHandler2 implements EventHandlerInterface
         return $this->handledEvents;
     }
 
-    private function handleTestEvent2(string $aggregateId, TestEvent2 $event, RecordedEvent $envelope): void
+    private function handleStudentNameChangedEvent(StudentNameChangedEvent $event, RecordedEvent $recordedEvent): void
     {
         $this->handledEvents[] = $event;
     }

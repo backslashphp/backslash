@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace Backslash\PdoEventStore;
 
-use Backslash\Aggregate\RecordedEvent;
-use Backslash\EventStore\Filter;
+use Backslash\Domain\RecordedEvent;
 use Backslash\EventStore\InspectorInterface;
+use Backslash\EventStore\Query\QueryInterface;
 
 class TestInspector implements InspectorInterface
 {
     /** @var RecordedEvent[] */
     private array $inspectedEvents = [];
 
-    public function getFilter(): Filter
+    public function getQuery(): ?QueryInterface
     {
-        return new Filter();
+        return null;
     }
 
-    public function inspect(string $aggregateId, string $aggregateType, RecordedEvent $recordedEvent): void
+    public function inspect(RecordedEvent $recordedEvent): void
     {
         $this->inspectedEvents[] = $recordedEvent;
     }

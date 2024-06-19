@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
 
 class TestMiddleware implements MiddlewareInterface
 {
@@ -18,7 +18,7 @@ class TestMiddleware implements MiddlewareInterface
         $this->output = &$output;
     }
 
-    public function publish(Stream $stream, EventStreamPublisherInterface $next): void
+    public function publish(RecordedEventStream $stream, EventStreamPublisherInterface $next): void
     {
         $this->output[] = 'before ' . $this->name;
         $next->publish($stream);

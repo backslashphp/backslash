@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\Scenario;
 
+use Backslash\Shared\Projection\TestBarProjection;
+use Backslash\Shared\Projection\TestFooProjection;
 use PHPUnit\Framework\TestCase;
 
 class UpdatedProjectionsTest extends TestCase
@@ -21,7 +23,7 @@ class UpdatedProjectionsTest extends TestCase
     {
         $updatedProjections = new UpdatedProjections($this->getProjections());
 
-        $this->assertCount(1, $updatedProjections->getAllOf(TestProjection1::class));
+        $this->assertCount(1, $updatedProjections->getAllOf(TestFooProjection::class));
     }
 
     /** @test */
@@ -31,15 +33,15 @@ class UpdatedProjectionsTest extends TestCase
 
         $projections = $updatedProjections->getAll();
 
-        $this->assertEquals(TestProjection1::class, get_class($projections[0]));
-        $this->assertEquals(TestProjection2::class, get_class($projections[1]));
+        $this->assertEquals(TestFooProjection::class, get_class($projections[0]));
+        $this->assertEquals(TestBarProjection::class, get_class($projections[1]));
     }
 
     private function getProjections(): array
     {
         return [
-            new TestProjection1(),
-            new TestProjection2(),
+            new TestFooProjection('1'),
+            new TestBarProjection('2'),
         ];
     }
 }

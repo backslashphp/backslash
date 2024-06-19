@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Aggregate\RecordedEvent;
+use Backslash\Domain\RecordedEvent;
 use RuntimeException;
 
 trait EventHandlerTrait
 {
-    public function handle(string $aggregateId, RecordedEvent $recordedEvent): void
+    public function handle(RecordedEvent $recordedEvent): void
     {
         $event = $recordedEvent->getEvent();
 
@@ -17,7 +17,7 @@ trait EventHandlerTrait
         $method = 'handle' . end($classParts);
 
         if (method_exists($this, $method)) {
-            $this->$method($aggregateId, $event, $recordedEvent);
+            $this->$method($event, $recordedEvent);
         } else {
             throw new RuntimeException(
                 sprintf(

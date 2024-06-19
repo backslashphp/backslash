@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\ProjectionStore;
 
+use Backslash\Shared\Projection\TestFooProjection;
 use PHPUnit\Framework\TestCase;
 
 class InMemoryProjectionStoreTest extends TestCase
@@ -14,7 +15,7 @@ class InMemoryProjectionStoreTest extends TestCase
         $this->expectException(ProjectionNotFoundException::class);
 
         $adapter = new InMemoryProjectionStoreAdapter();
-        $adapter->find('123', TestProjection::class);
+        $adapter->find('123', TestFooProjection::class);
     }
 
     /** @test */
@@ -22,13 +23,13 @@ class InMemoryProjectionStoreTest extends TestCase
     {
         $store = new ProjectionStore(new InMemoryProjectionStoreAdapter());
 
-        $this->assertCount(0, iterator_to_array($store->getAdapter()->findBy(TestProjection::class)));
+        $this->assertCount(0, iterator_to_array($store->getAdapter()->findBy(TestFooProjection::class)));
 
-        $store->store(new TestProjection('123'));
-        $store->store(new TestProjection('234'));
-        $store->store(new TestProjection('345'));
+        $store->store(new TestFooProjection('123'));
+        $store->store(new TestFooProjection('234'));
+        $store->store(new TestFooProjection('345'));
         $store->commit();
 
-        $this->assertCount(3, iterator_to_array($store->getAdapter()->findBy(TestProjection::class)));
+        $this->assertCount(3, iterator_to_array($store->getAdapter()->findBy(TestFooProjection::class)));
     }
 }

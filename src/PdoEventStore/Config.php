@@ -10,16 +10,13 @@ final class Config
 {
     private string $table = 'event_store';
 
-    /** @var string[] */
     private array $aliases = [
         'sequence' => 'sequence',
-        'aggregate_type' => 'aggregate_type',
-        'aggregate_id' => 'aggregate_id',
-        'aggregate_version' => 'aggregate_version',
-        'event_id' => 'event_id',
+        'event_uid' => 'event_uid',
         'event_class' => 'event_class',
-        'event_metadata' => 'event_metadata',
+        'event_identifiers' => 'event_identifiers',
         'event_payload' => 'event_payload',
+        'event_metadata' => 'event_metadata',
         'event_time' => 'event_time',
     ];
 

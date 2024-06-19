@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Backslash\StreamEnricher;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
 use Backslash\EventStore\EventStoreInterface;
 use Backslash\EventStore\InspectorInterface;
 use Backslash\EventStore\MiddlewareInterface;
+use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\StoredRecordedEventStream;
 
 final class StreamEnricherEventStoreMiddleware implements MiddlewareInterface
 {
@@ -18,28 +20,14 @@ final class StreamEnricherEventStoreMiddleware implements MiddlewareInterface
         $this->enricher = $enricher;
     }
 
-    public function fetch(
-        string $aggregateId,
-        string $aggregateType,
-        int $fromVersion,
-        EventStoreInterface $next,
-    ): Stream {
-        return $next->fetch($aggregateId, $aggregateType, $fromVersion);
+    public function fetch(?QueryInterface $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
+    {
+        return $next->fetch($query, $fromSequence);
     }
 
-    public function streamExists(string $aggregateId, string $aggregateType, EventStoreInterface $next): bool
+    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
     {
-        return $next->streamExists($aggregateId, $aggregateType);
-    }
-
-    public function getVersion(string $aggregateId, string $aggregateType, EventStoreInterface $next): int
-    {
-        return $next->getVersion($aggregateId, $aggregateType);
-    }
-
-    public function append(Stream $stream, ?int $expectedVersion, EventStoreInterface $next): void
-    {
-        $next->append($this->enricher->enrich($stream), $expectedVersion);
+        $next->append($this->enricher->enrich($stream), $concurrencyCheck, $expectedSequence);
     }
 
     public function inspect(InspectorInterface $inspector, EventStoreInterface $next): void

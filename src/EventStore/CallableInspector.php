@@ -4,29 +4,30 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore;
 
-use Backslash\Aggregate\RecordedEvent;
+use Backslash\Domain\RecordedEvent;
+use Backslash\EventStore\Query\QueryInterface;
 
-final class CallableInspector implements InspectorInterface
+class CallableInspector implements InspectorInterface
 {
     /** @var callable */
     private $callable;
 
-    private Filter $filter;
+    private ?QueryInterface $query;
 
-    public function __construct(callable $callable, Filter $filter)
+    public function __construct(callable $callable, ?QueryInterface $query)
     {
         $this->callable = $callable;
-        $this->filter = $filter;
+        $this->query = $query;
     }
 
-    public function getFilter(): Filter
+    public function getQuery(): ?QueryInterface
     {
-        return $this->filter;
+        return $this->query;
     }
 
-    public function inspect(string $aggregateId, string $aggregateType, RecordedEvent $recordedEvent): void
+    public function inspect(RecordedEvent $recordedEvent): void
     {
         $callable = $this->callable;
-        $callable($aggregateId, $recordedEvent);
+        $callable($recordedEvent);
     }
 }

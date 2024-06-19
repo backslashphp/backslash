@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace Backslash\StreamEnricherEventStoreMiddleware;
 
-use Backslash\Aggregate\Metadata;
-use Backslash\Aggregate\RecordedEvent;
-use Backslash\Aggregate\Stream;
+use Backslash\Clock\Clock;
+use Backslash\Domain\Metadata;
+use Backslash\Domain\RecordedEvent;
+use Backslash\Domain\RecordedEventStream;
 use Backslash\EventStore\EventStore;
 use Backslash\EventStore\EventStoreInterface;
-use Backslash\EventStore\InMemoryEventStoreAdapter;
 use Backslash\EventStore\InspectorInterface;
 use Backslash\EventStore\MiddlewareInterface;
+use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\StoredRecordedEventStream;
+use Backslash\Shared\Event\StudentRegisteredEvent;
+use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
+use Backslash\Shared\StreamEnricher\TestEnricher;
 use Backslash\StreamEnricher\StreamEnricherEventStoreMiddleware;
 use PHPUnit\Framework\TestCase;
 
@@ -23,29 +28,15 @@ class StreamEnricherEventStoreMiddlewareTest extends TestCase
         $mw = new class () implements MiddlewareInterface {
             public ?Metadata $metadata = null;
 
-            public function fetch(
-                string $aggregateId,
-                string $aggregateType,
-                int $fromVersion,
-                EventStoreInterface $next,
-            ): Stream {
-                return $next->fetch($aggregateId, $aggregateType, $fromVersion);
-            }
-
-            public function streamExists(string $aggregateId, string $aggregateType, EventStoreInterface $next): bool
+            public function fetch(?QueryInterface $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
             {
-                return $next->streamExists($aggregateId, $aggregateType);
+                return $next->fetch($query, $fromSequence);
             }
 
-            public function getVersion(string $aggregateId, string $aggregateType, EventStoreInterface $next): int
-            {
-                return $next->getVersion($aggregateId, $aggregateType);
-            }
-
-            public function append(Stream $stream, ?int $expectedVersion, EventStoreInterface $next): void
+            public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
             {
                 $this->metadata = $stream->getRecordedEvents()[0]->getMetadata();
-                $next->append($stream, $expectedVersion);
+                $next->append($stream, $concurrencyCheck, $expectedSequence);
             }
 
             public function inspect(InspectorInterface $inspector, EventStoreInterface $next): void
@@ -59,14 +50,15 @@ class StreamEnricherEventStoreMiddlewareTest extends TestCase
             }
         };
 
-        $store = new EventStore(new InMemoryEventStoreAdapter());
+        $store = new EventStore(InMemorySqlitePdoEventStoreFactory::build());
         $store->addMiddleware($mw);
         $store->addMiddleware(new StreamEnricherEventStoreMiddleware(new TestEnricher()));
 
-        $stream = (new Stream('123', 'type'))
-            ->withRecordedEvent(RecordedEvent::createNow(new TestEvent(), new Metadata(), 1));
+        $stream = new RecordedEventStream(
+            RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
+        );
 
-        $store->append($stream);
+        $store->append($stream, null, null);
 
         $this->assertEquals($mw->metadata->toArray(), ['foo' => 'bar']);
     }

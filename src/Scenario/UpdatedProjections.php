@@ -29,14 +29,11 @@ final class UpdatedProjections implements Countable
     }
 
     /** @return ProjectionInterface[] */
-    public function getAllOf(string $projectionClass): array
+    public function getAllOf(string $fqcn): array
     {
-        $projections = [];
-        foreach ($this->updatedProjections as $projection) {
-            if ($projection::class === $projectionClass) {
-                $projections[] = $projection;
-            }
-        }
-        return $projections;
+        return array_filter(
+            $this->updatedProjections,
+            fn (ProjectionInterface $item) => $item::class === $fqcn,
+        );
     }
 }

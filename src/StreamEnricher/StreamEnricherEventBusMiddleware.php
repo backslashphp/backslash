@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\StreamEnricher;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
 use Backslash\EventBus\EventStreamPublisherInterface;
 use Backslash\EventBus\MiddlewareInterface;
 
@@ -17,7 +17,7 @@ final class StreamEnricherEventBusMiddleware implements MiddlewareInterface
         $this->enricher = $enricher;
     }
 
-    public function publish(Stream $stream, EventStreamPublisherInterface $next): void
+    public function publish(RecordedEventStream $stream, EventStreamPublisherInterface $next): void
     {
         $next->publish($this->enricher->enrich($stream));
     }

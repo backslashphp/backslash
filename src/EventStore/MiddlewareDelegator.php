@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
+use Backslash\EventStore\Query\QueryInterface;
 
 final class MiddlewareDelegator implements EventStoreInterface
 {
@@ -18,24 +19,14 @@ final class MiddlewareDelegator implements EventStoreInterface
         $this->next = $next;
     }
 
-    public function fetch(string $aggregateId, string $aggregateType, int $fromVersion = 0): Stream
+    public function fetch(?QueryInterface $query, int $fromSequence = 0): StoredRecordedEventStream
     {
-        return $this->middleware->fetch($aggregateId, $aggregateType, $fromVersion, $this->next);
+        return $this->middleware->fetch($query, $fromSequence, $this->next);
     }
 
-    public function streamExists(string $aggregateId, string $aggregateType): bool
+    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence): void
     {
-        return $this->middleware->streamExists($aggregateId, $aggregateType, $this->next);
-    }
-
-    public function getVersion(string $aggregateId, string $aggregateType): int
-    {
-        return $this->middleware->getVersion($aggregateId, $aggregateType, $this->next);
-    }
-
-    public function append(Stream $stream, ?int $expectedVersion = null): void
-    {
-        $this->middleware->append($stream, $expectedVersion, $this->next);
+        $this->middleware->append($stream, $concurrencyCheck, $expectedSequence, $this->next);
     }
 
     public function inspect(InspectorInterface $inspector): void

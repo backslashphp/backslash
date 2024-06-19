@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\ProjectionStore;
 
+use Backslash\Shared\Projection\TestFooProjection;
 use PHPUnit\Framework\TestCase;
 
 class UnitOfWorkTest extends TestCase
@@ -15,21 +16,21 @@ class UnitOfWorkTest extends TestCase
         $this->assertEmpty($unit->getStored());
         $this->assertEmpty($unit->getRemoved());
 
-        $unit->store(new TestProjection('123'));
+        $unit->store(new TestFooProjection('123'));
         $this->assertCount(1, $unit->getStored());
-        $this->assertNotNull($unit->getOneStored('123', TestProjection::class));
+        $this->assertNotNull($unit->getOneStored('123', TestFooProjection::class));
         $this->assertEmpty($unit->getRemoved());
 
-        $unit->remove('123', TestProjection::class);
+        $unit->remove('123', TestFooProjection::class);
         $this->assertEmpty($unit->getStored());
-        $this->assertNull($unit->getOneStored('123', TestProjection::class));
+        $this->assertNull($unit->getOneStored('123', TestFooProjection::class));
         $this->assertCount(1, $unit->getRemoved());
 
-        $unit->remove('123', TestProjection::class);
+        $unit->remove('123', TestFooProjection::class);
         $this->assertEmpty($unit->getStored());
         $this->assertCount(1, $unit->getRemoved());
 
-        $unit->store(new TestProjection('123'));
+        $unit->store(new TestFooProjection('123'));
         $this->assertCount(1, $unit->getStored());
         $this->assertEmpty($unit->getRemoved());
     }

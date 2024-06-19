@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore;
 
-use Backslash\Aggregate\RecordedEvent;
+use Backslash\Domain\RecordedEvent;
+use Backslash\EventStore\Query\QueryInterface;
 
 interface InspectorInterface
 {
-    public function getFilter(): Filter;
+    public function getQuery(): ?QueryInterface;
 
-    public function inspect(string $aggregateId, string $aggregateType, RecordedEvent $recordedEvent): void;
+    public function inspect(RecordedEvent $recordedEvent): void;
 }

@@ -10,19 +10,14 @@ use ReflectionClass;
 
 final class ProjectionsMustContainOnly extends Constraint
 {
-    private string $projectionClass;
+    private string $projectionFqcn;
 
-    public function __construct(string $projectionClass)
+    public function __construct(string $projectionFqcn)
     {
         if ((new ReflectionClass(Constraint::class))->hasMethod('__construct')) {
             parent::__construct();
         }
-        $this->projectionClass = $projectionClass;
-    }
-
-    public function toString(): string
-    {
-        return "must contains only {$this->projectionClass}";
+        $this->projectionFqcn = $projectionFqcn;
     }
 
     /**
@@ -32,8 +27,18 @@ final class ProjectionsMustContainOnly extends Constraint
     {
         $result = true;
         foreach ($updatedProjections->getAll() as $projection) {
-            $result = $result && ($projection::class === $this->projectionClass);
+            $result = $result && ($projection::class === $this->projectionFqcn);
         }
         return $result;
+    }
+
+    public function toString(): string
+    {
+        return "must contain only instances of {$this->projectionFqcn}";
+    }
+
+    protected function failureDescription($other): string
+    {
+        return 'updated projections ' . $this->toString();
     }
 }

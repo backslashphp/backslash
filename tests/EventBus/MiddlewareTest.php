@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Aggregate\Stream;
+use Backslash\Domain\RecordedEventStream;
 use PHPUnit\Framework\TestCase;
 
 class MiddlewareTest extends TestCase
@@ -19,7 +19,7 @@ class MiddlewareTest extends TestCase
         $bus->addMiddleware(new TestMiddleware('mw2', $output));
         $bus->addMiddleware(new TestMiddleware('mw3', $output));
 
-        $bus->publish(new Stream('123', 'type'));
+        $bus->publish(new RecordedEventStream());
         $this->assertEquals(
             $output,
             [
