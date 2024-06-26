@@ -74,6 +74,10 @@ final class PdoEventStoreAdapter implements AdapterInterface
 
     public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence): void
     {
+        if (!count($stream)) {
+            return;
+        }
+        
         [$sql, $values] = $this->driver->buildInsertStatementAndValues(
             $stream,
             $concurrencyCheck,
