@@ -31,9 +31,9 @@ final class UpdatedProjections implements Countable
     /** @return ProjectionInterface[] */
     public function getAllOf(string $fqcn): array
     {
-        return array_filter(
+        return array_values(array_filter(
             $this->updatedProjections,
             fn (ProjectionInterface $item) => $item::class === $fqcn,
-        );
+        ));
     }
 }

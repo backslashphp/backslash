@@ -31,9 +31,9 @@ final class PublishedEvents implements Countable
     /** @return RecordedEvent[] */
     public function getAllOf(string $fqcn): array
     {
-        return array_filter(
+        return array_values(array_filter(
             $this->stream->getRecordedEvents(),
             fn (RecordedEvent $item) => $item->getEvent()::class === $fqcn,
-        );
+        ));
     }
 }
