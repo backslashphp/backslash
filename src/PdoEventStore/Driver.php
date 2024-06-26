@@ -48,7 +48,7 @@ enum Driver: string
     public function buildTruncateTableStatement(Config $config): string
     {
         return match ($this) {
-            self::MYSQL => sprintf('TRUNCATE TABLE `%s`', $config->getTable()),
+            self::MYSQL => sprintf('DELETE FROM `%s`', $config->getTable()),
             self::SQLITE => sprintf('DELETE FROM `%s`', $config->getTable()),
         };
     }
