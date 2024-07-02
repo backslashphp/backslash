@@ -77,7 +77,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
         if (!count($stream)) {
             return;
         }
-        
+
         [$sql, $values] = $this->driver->buildInsertStatementAndValues(
             $stream,
             $concurrencyCheck,

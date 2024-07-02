@@ -82,8 +82,8 @@ enum Driver: string
     public function buildJsonExtractStatement(string $column, string $field): string
     {
         return match ($this) {
-            self::MYSQL => sprintf('JSON_VALUE(`%s`, "$.%s")', $column, $field),
-            self::SQLITE => sprintf('JSON_EXTRACT(`%s`, "$.%s")', $column, $field),
+            self::MYSQL => sprintf('IFNULL(JSON_VALUE(`%s`, "$.%s"), "")', $column, $field),
+            self::SQLITE => sprintf('IFNULL(JSON_EXTRACT(`%s`, "$.%s"), "")', $column, $field),
         };
     }
 

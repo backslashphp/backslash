@@ -10,10 +10,6 @@ interface QueryInterface
 
     public function or(self $subquery): self;
 
-    /** @return (string|int)[] */
-    public function getValues(): array;
-
-    public function isNegative(): bool;
-
+    /** @return self[] */
     public function getSubqueries(): array;
 }

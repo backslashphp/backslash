@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore\Query;
 
-class Identifier implements QueryInterface
+class Metadata implements QueryInterface
 {
     use SubqueriesTrait;
 
