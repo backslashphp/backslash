@@ -72,15 +72,22 @@ final class QueryToWhereClause
                 break;
             case (Identifier::class):
                 /** @var Identifier $query */
-                $statement = sprintf(
-                    '%s %s (%s)',
-                    $this->driver->buildJsonExtractStatement(
+                if ($query->isIncludes()) {
+                    $statement = $this->driver->buildJsonArrayIncludesStatement(
                         $this->config->getAlias('event_identifiers'),
                         $query->getName(),
-                    ),
-                    $query->isNegative() ? 'NOT IN' : 'IN',
-                    implode(', ', array_fill(0, count($query->getValues()), '?')),
-                );
+                    );
+                } else {
+                    $statement = sprintf(
+                        '%s %s (%s)',
+                        $this->driver->buildJsonExtractStatement(
+                            $this->config->getAlias('event_identifiers'),
+                            $query->getName(),
+                        ),
+                        $query->isNegative() ? 'NOT IN' : 'IN',
+                        implode(', ', array_fill(0, count($query->getValues()), '?')),
+                    );
+                }
                 $this->values = array_merge($this->values, $query->getValues());
                 break;
             case (Metadata::class):

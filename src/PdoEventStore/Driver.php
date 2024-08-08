@@ -8,6 +8,7 @@ use Backslash\Domain\RecordedEvent;
 use Backslash\Domain\RecordedEventStream;
 use Backslash\EventStore\Query\QueryInterface;
 use Backslash\Serializer\SerializerInterface;
+use UnexpectedValueException;
 
 enum Driver: string
 {
@@ -84,6 +85,17 @@ enum Driver: string
         return match ($this) {
             self::MYSQL => sprintf('IFNULL(JSON_VALUE(`%s`, "$.%s"), "")', $column, $field),
             self::SQLITE => sprintf('IFNULL(JSON_EXTRACT(`%s`, "$.%s"), "")', $column, $field),
+        };
+    }
+
+    public function buildJsonArrayIncludesStatement(string $column, string $path): string
+    {
+        if (preg_match('/[^a-zA-Z0-9_]/', $path) !== 0) {
+            throw new UnexpectedValueException('$path must contain only letters, numbers or underscores.');
+        }
+        return match ($this) {
+            self::MYSQL => sprintf('JSON_SEARCH(`%s`, "one", ?, "", "$.%s") IS NOT NULL', $column, $path),
+            self::SQLITE => sprintf('EXISTS (SELECT 1 FROM JSON_EACH(`%s`, "$.%s") WHERE `value` = ?)', $column, $path),
         };
     }
 

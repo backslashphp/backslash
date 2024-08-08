@@ -17,6 +17,7 @@ use Backslash\EventStore\Query\Identifier;
 use Backslash\EventStore\Query\Metadata as MetadataQuery;
 use Backslash\EventStore\Query\Sequence;
 use Backslash\Shared\Event\StudentNameChangedEvent;
+use Backslash\Shared\Event\StudentPreferredColorChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
 use DateTimeImmutable;
@@ -45,11 +46,20 @@ class PdoEventStoreTest extends TestCase
                 RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
                 RecordedEvent::create(new StudentRegisteredEvent('2', 'Mary'), new Metadata(), Clock::now()),
                 RecordedEvent::create(new StudentNameChangedEvent('2', 'Mary', 'Anna'), new Metadata(), Clock::now()),
+                RecordedEvent::create(new StudentPreferredColorChangedEvent('1', ['blue', 'green']), new Metadata(), Clock::now()),
             ),
             null,
             null,
         );
 
+        $events = $this->store->fetch($query);
+        $this->assertCount(1, $events);
+
+        $query = Identifier::includes('colors', 'red');
+        $events = $this->store->fetch($query);
+        $this->assertCount(0, $events);
+
+        $query = Identifier::includes('colors', 'blue');
         $events = $this->store->fetch($query);
         $this->assertCount(1, $events);
 
