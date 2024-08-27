@@ -131,7 +131,7 @@ enum Driver: string
 
         $statement = match ($this) {
             self::MYSQL => sprintf(
-                'INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) SELECT `col1`, `col2`, `col3`, `col4`, `col5`, `col6` FROM (%s) `union_selects` WHERE (SELECT IFNULL(MAX(`%s`), 0) FROM `%s` WHERE 1=1 AND %s) = %d',
+                'INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) SELECT `col1`, `col2`, `col3`, `col4`, `col5`, `col6` FROM (%s) `union_selects` WHERE (SELECT IFNULL(MAX(`%s`), 0) FROM `%s` WHERE 1=1 AND %s) %s',
                 $config->getTable(),
                 $config->getAlias('event_uid'),
                 $config->getAlias('event_class'),
@@ -143,10 +143,10 @@ enum Driver: string
                 $config->getAlias('sequence'),
                 $config->getTable(),
                 $concurrencyCheckWhere->getStatement(),
-                $expectedSequence,
+                $expectedSequence ? sprintf('= %d', $expectedSequence) : '>= 0',
             ),
             self::SQLITE => sprintf(
-                'INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) SELECT `col1`, `col2`, `col3`, `col4`, `col5`, `col6` FROM (%s) WHERE (SELECT IFNULL(MAX(`%s`), 0) FROM `%s` LEFT JOIN JSON_EACH(`%s`) ON JSON_VALID(`%s`) WHERE 1=1 AND %s) = %d',
+                'INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) SELECT `col1`, `col2`, `col3`, `col4`, `col5`, `col6` FROM (%s) WHERE (SELECT IFNULL(MAX(`%s`), 0) FROM `%s` LEFT JOIN JSON_EACH(`%s`) ON JSON_VALID(`%s`) WHERE 1=1 AND %s) %s',
                 $config->getTable(),
                 $config->getAlias('event_uid'),
                 $config->getAlias('event_class'),
@@ -160,9 +160,10 @@ enum Driver: string
                 $config->getAlias('event_identifiers'),
                 $config->getAlias('event_identifiers'),
                 $concurrencyCheckWhere->getStatement(),
-                $expectedSequence,
+                $expectedSequence ? sprintf('= %d', $expectedSequence) : '>= 0',
             ),
         };
+
         return [$statement, $values];
     }
 

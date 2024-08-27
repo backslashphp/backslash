@@ -45,6 +45,12 @@ class PdoEventStoreTest extends TestCase
             new RecordedEventStream(
                 RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
                 RecordedEvent::create(new StudentRegisteredEvent('2', 'Mary'), new Metadata(), Clock::now()),
+            ),
+            null,
+            null,
+        );
+        $this->store->append(
+            new RecordedEventStream(
                 RecordedEvent::create(new StudentNameChangedEvent('2', 'Mary', 'Anna'), new Metadata(), Clock::now()),
                 RecordedEvent::create(new StudentPreferredColorChangedEvent('1', ['blue', 'green']), new Metadata(), Clock::now()),
             ),
