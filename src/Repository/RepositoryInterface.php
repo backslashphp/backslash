@@ -9,7 +9,7 @@ use Backslash\EventStore\Query\QueryInterface;
 
 interface RepositoryInterface
 {
-    public function load(string $class, QueryInterface $query): StateInterface;
+    public function load(string $class, ?QueryInterface $query): StateInterface;
 
     public function store(StateInterface $state): void;
 }

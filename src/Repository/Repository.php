@@ -25,7 +25,7 @@ final class Repository implements RepositoryInterface
         $this->chainMiddlewares();
     }
 
-    public function load(string $class, QueryInterface $query): StateInterface
+    public function load(string $class, ?QueryInterface $query): StateInterface
     {
         return $this->chain->load($class, $query);
     }

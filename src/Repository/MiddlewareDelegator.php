@@ -19,7 +19,7 @@ final class MiddlewareDelegator implements RepositoryInterface
         $this->next = $next;
     }
 
-    public function load(string $class, QueryInterface $query): StateInterface
+    public function load(string $class, ?QueryInterface $query): StateInterface
     {
         return $this->middleware->load($class, $query, $this->next);
     }

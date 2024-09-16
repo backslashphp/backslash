@@ -19,7 +19,7 @@ class TestRepositoryMiddleware implements MiddlewareInterface
         $this->output = &$output;
     }
 
-    public function load(string $class, QueryInterface $query, RepositoryInterface $next): StateInterface
+    public function load(string $class, ?QueryInterface $query, RepositoryInterface $next): StateInterface
     {
         $this->output[] = 'before ' . $this->name;
         $state = $next->load($class, $query);
