@@ -22,7 +22,7 @@ While Backslash has been used in production for many years at [FNQLHSSC](https:/
 meet the needs of a specific environment, and it may lack the robustness, flexibility, or polish expected in a
 widely-adopted, general-purpose library. This library is provided as-is, with no guarantees, warranties, or support.
 
-If you are exploring CQRS or Event Sourcing, you may use Backlash as a learning resource to understand these concepts in
+If you are exploring CQRS or Event Sourcing, you may use Backslash as a learning resource to understand these concepts in
 practice.
 
 ## Installation
