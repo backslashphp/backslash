@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<psalm
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    ensureOverrideAttribute="false"
+    errorLevel="4"
+    phpVersion="8.4"
+    resolveFromConfigFile="true"
+    useDocblockTypes="false"
+    useDocblockPropertyTypes="false"
+>
+    <projectFiles>
+        <directory name="src"/>
+        <ignoreFiles>
+            <directory name="vendor"/>
+        </ignoreFiles>
+    </projectFiles>
+    <forbiddenFunctions>
+        <function name="die"/>
+        <function name="var_dump"/>
+    </forbiddenFunctions>
+    <issueHandlers>
+        <PossiblyUnusedMethod errorLevel="suppress"/>
+        <UnusedClass errorLevel="suppress"/>
+    </issueHandlers>
+</psalm>

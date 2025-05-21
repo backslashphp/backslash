@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "php": "^8.1",
+        "php": "^8.4",
         "ext-json": "*",
         "ext-pdo": "*",
         "psr/clock": "*"
@@ -19,12 +19,11 @@
     "require-dev": {
         "ext-pdo_sqlite": "*",
         "friendsofphp/php-cs-fixer": "^3",
-        "nunomaduro/collision": "^6",
-        "phpstan/phpstan": "^1",
         "phpunit/phpunit": "^8 || ^9",
         "psr/container": "^2",
         "ramsey/uuid": "^4",
-        "squizlabs/php_codesniffer": "^3"
+        "squizlabs/php_codesniffer": "^3",
+        "vimeo/psalm": "^6"
     },
     "suggest": {
         "phpunit/phpunit": "PHPUnit is required by Scenario component"
