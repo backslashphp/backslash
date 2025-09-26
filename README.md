@@ -38,8 +38,6 @@ composer require backslashphp/backslash
 
 > WORK IN PROGRESS
 
-See the `/docs` folder for complete [documentation](./docs/README.md).
-
 ## Testing
 
 ```bash
