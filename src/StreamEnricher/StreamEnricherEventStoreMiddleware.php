@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\StreamEnricher;
 
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEventStream;
 use Backslash\EventStore\EventStoreInterface;
 use Backslash\EventStore\InspectorInterface;
 use Backslash\EventStore\MiddlewareInterface;

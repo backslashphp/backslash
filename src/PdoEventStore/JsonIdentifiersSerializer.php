@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\PdoEventStore;
 
-use Backslash\Domain\Identifiers;
+use Backslash\Event\Identifiers;
 use Backslash\Serializer\AdapterInterface;
 use Backslash\Serializer\DeserializationException;
 use InvalidArgumentException;

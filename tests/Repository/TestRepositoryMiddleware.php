@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\Repository;
 
-use Backslash\Domain\StateInterface;
 use Backslash\EventStore\Query\QueryInterface;
+use Backslash\Model\ModelInterface;
 
 class TestRepositoryMiddleware implements MiddlewareInterface
 {
@@ -19,18 +19,18 @@ class TestRepositoryMiddleware implements MiddlewareInterface
         $this->output = &$output;
     }
 
-    public function load(string $class, ?QueryInterface $query, RepositoryInterface $next): StateInterface
+    public function loadModel(string $modelClass, ?QueryInterface $query, RepositoryInterface $next): ModelInterface
     {
         $this->output[] = 'before ' . $this->name;
-        $state = $next->load($class, $query);
+        $model = $next->loadModel($modelClass, $query);
         $this->output[] = 'after ' . $this->name;
-        return $state;
+        return $model;
     }
 
-    public function store(StateInterface $state, RepositoryInterface $next): void
+    public function storeChanges(ModelInterface $model, RepositoryInterface $next): void
     {
         $this->output[] = 'before ' . $this->name;
-        $next->store($state);
+        $next->storeChanges($model);
         $this->output[] = 'after ' . $this->name;
     }
 }

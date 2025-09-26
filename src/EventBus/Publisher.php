@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Domain\RecordedEvent;
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEvent;
+use Backslash\Event\RecordedEventStream;
 
 final class Publisher implements EventStreamPublisherInterface
 {

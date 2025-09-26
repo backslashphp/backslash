@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Backslash\Shared\State;
+namespace Backslash\Shared\Model;
 
-use Backslash\Domain\AbstractState;
 use Backslash\EventStore\Query\EventClass;
 use Backslash\EventStore\Query\Identifier;
 use Backslash\EventStore\Query\QueryInterface;
+use Backslash\Model\AbstractModel;
 use Backslash\Shared\Event\StudentNameChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 
-class StudentNameState extends AbstractState
+class StudentNameChangeModel extends AbstractModel
 {
     private string $studentId;
 
@@ -26,7 +26,7 @@ class StudentNameState extends AbstractState
     public function changeName(string $name): void
     {
         if ($name !== $this->name) {
-            $this->apply(new StudentNameChangedEvent($this->studentId, $this->name, $name));
+            $this->record(new StudentNameChangedEvent($this->studentId, $this->name, $name));
         }
     }
 

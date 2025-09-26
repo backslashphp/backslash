@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Domain\EventInterface;
-use Backslash\Domain\RecordedEvent;
+use Backslash\Event\EventInterface;
+use Backslash\Event\RecordedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 
 class TestEventHandler1 implements EventHandlerInterface

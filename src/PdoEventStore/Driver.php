@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\PdoEventStore;
 
-use Backslash\Domain\RecordedEvent;
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEvent;
+use Backslash\Event\RecordedEventStream;
 use Backslash\EventStore\Query\QueryInterface;
 use Backslash\Serializer\SerializerInterface;
 use UnexpectedValueException;

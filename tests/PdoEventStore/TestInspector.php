@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\PdoEventStore;
 
-use Backslash\Domain\RecordedEvent;
+use Backslash\Event\RecordedEvent;
 use Backslash\EventStore\InspectorInterface;
 use Backslash\EventStore\Query\QueryInterface;
 

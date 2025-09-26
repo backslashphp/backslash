@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Domain\RecordedEvent;
+use Backslash\Event\RecordedEvent;
 use RuntimeException;
 
 trait EventHandlerTrait

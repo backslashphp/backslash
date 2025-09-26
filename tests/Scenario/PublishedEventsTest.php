@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Backslash\Scenario;
 
 use Backslash\Clock\Clock;
-use Backslash\Domain\Metadata;
-use Backslash\Domain\RecordedEvent;
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\Metadata;
+use Backslash\Event\RecordedEvent;
+use Backslash\Event\RecordedEventStream;
 use Backslash\Shared\Event\CourseCreatedEvent;
 use Backslash\Shared\Event\StudentNameChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;

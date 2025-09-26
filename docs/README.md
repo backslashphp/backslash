@@ -85,9 +85,9 @@ In Backslash, events are immutable objects that capture something meaningful tha
 Here's an example of an event class:
 
 ```php
-use Backslash\Domain\EventInterface;
-use Backslash\Domain\Identifiers;
-use Backslash\Domain\ToArrayTrait;
+use Backslash\Event\EventInterface;
+use Backslash\Event\Identifiers;
+use Backslash\Event\ToArrayTrait;
 
 readonly class StudentSubscribedToCourseEvent implements EventInterface
 {
@@ -202,7 +202,7 @@ and tracking new ones.
 Here's an example of a State that manages course capacity:
 
 ```php
-use Backslash\Domain\AbstractState;
+use Backslash\Event\AbstractState;
 
 class CourseCapacityState extends AbstractState
 {
@@ -480,7 +480,7 @@ interacting with external systems.
 In Backslash, an event handler must implement the `EventHandlerInterface`:
 
 ```php
-use Backslash\Domain\RecordedEvent;
+use Backslash\Event\RecordedEvent;
 
 interface EventHandlerInterface
 {
@@ -501,7 +501,7 @@ example, for the event class `CourseCapacityChangedEvent`, the trait will invoke
 Here is an example of an event handler:
 
 ```php
-use Backslash\Domain\RecordedEvent;
+use Backslash\Event\RecordedEvent;
 use Backslash\EventBus\EventHandlerInterface;
 use Backslash\EventBus\EventHandlerTrait;
 
@@ -595,7 +595,7 @@ orchestrate the decision-making process.
 
 ```php
 use Backslash\CommandBus\CommandHandlerInterface;
-use Backslash\Domain\Repository;
+use Backslash\Event\Repository;
 
 class ChangeCourseCapacityHandler implements CommandHandlerInterface
 {

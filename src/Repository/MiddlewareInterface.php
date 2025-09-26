@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Backslash\Repository;
 
-use Backslash\Domain\StateInterface;
 use Backslash\EventStore\Query\QueryInterface;
+use Backslash\Model\ModelInterface;
 
 interface MiddlewareInterface
 {
-    public function load(string $class, ?QueryInterface $query, RepositoryInterface $next): StateInterface;
+    public function loadModel(string $modelClass, ?QueryInterface $query, RepositoryInterface $next): ModelInterface;
 
-    public function store(StateInterface $state, RepositoryInterface $next): void;
+    public function storeChanges(ModelInterface $model, RepositoryInterface $next): void;
 }

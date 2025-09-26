@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore;
 
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEventStream;
 use Backslash\EventStore\Query\QueryInterface;
 
 final class MiddlewareDelegator implements EventStoreInterface

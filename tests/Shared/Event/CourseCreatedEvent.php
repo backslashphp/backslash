@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Backslash\Shared\Event;
 
-use Backslash\Domain\EventInterface;
-use Backslash\Domain\Identifiers;
-use Backslash\Domain\ToArrayTrait;
+use Backslash\Event\EventInterface;
+use Backslash\Event\Identifiers;
+use Backslash\Event\ToArrayTrait;
 
 class CourseCreatedEvent implements EventInterface
 {

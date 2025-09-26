@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Backslash\Shared\State;
+namespace Backslash\Shared\Model;
 
-use Backslash\Domain\AbstractState;
 use Backslash\EventStore\Query\EventClass;
 use Backslash\EventStore\Query\Identifier;
 use Backslash\EventStore\Query\QueryInterface;
+use Backslash\Model\AbstractModel;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 
-class StudentRegistrationState extends AbstractState
+class StudentRegistrationModel extends AbstractModel
 {
     public static function getQuery(string $studentId): QueryInterface
     {
@@ -18,8 +18,8 @@ class StudentRegistrationState extends AbstractState
             ->and(Identifier::is('studentId', $studentId));
     }
 
-    public function subscribe(string $studentId, string $name): void
+    public function register(string $studentId, string $name): void
     {
-        $this->apply(new StudentRegisteredEvent($studentId, $name));
+        $this->record(new StudentRegisteredEvent($studentId, $name));
     }
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Backslash\Scenario;
 
 use Backslash\CommandDispatcher\DispatcherInterface;
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStoreInterface;
 use Exception;

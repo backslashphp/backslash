@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Backslash\Repository;
 
-use Backslash\Domain\StateInterface;
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStoreInterface;
 use Backslash\EventStore\Query\QueryInterface;
+use Backslash\Model\ModelInterface;
 
 final class Repository implements RepositoryInterface
 {
@@ -25,14 +25,14 @@ final class Repository implements RepositoryInterface
         $this->chainMiddlewares();
     }
 
-    public function load(string $class, ?QueryInterface $query): StateInterface
+    public function loadModel(string $modelClass, ?QueryInterface $query): ModelInterface
     {
-        return $this->chain->load($class, $query);
+        return $this->chain->loadModel($modelClass, $query);
     }
 
-    public function store(StateInterface $state): void
+    public function storeChanges(ModelInterface $model): void
     {
-        $this->chain->store($state);
+        $this->chain->storeChanges($model);
     }
 
     public function addMiddleware(MiddlewareInterface $middleware): void

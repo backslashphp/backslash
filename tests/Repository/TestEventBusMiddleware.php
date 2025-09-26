@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\Repository;
 
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventStreamPublisherInterface;
 
 class TestEventBusMiddleware implements \Backslash\EventBus\MiddlewareInterface

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\Shared\StreamEnricher;
 
-use Backslash\Domain\RecordedEvent;
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEvent;
+use Backslash\Event\RecordedEventStream;
 use Backslash\StreamEnricher\StreamEnricherInterface;
 
 class TestEnricher implements StreamEnricherInterface

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Backslash\PdoEventStore;
 
-use Backslash\Domain\RecordedEvent;
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEvent;
+use Backslash\Event\RecordedEventStream;
 use Backslash\EventStore\AdapterInterface;
 use Backslash\EventStore\ConcurrencyException;
 use Backslash\EventStore\InspectorInterface;

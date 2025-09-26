@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\Shared\EventStore;
 
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEventStream;
 use Backslash\EventStore\AdapterInterface;
 use Backslash\EventStore\InspectorInterface;
 use Backslash\EventStore\Query\QueryInterface;

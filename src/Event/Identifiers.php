@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Backslash\Domain;
+namespace Backslash\Event;
 
 use InvalidArgumentException;
 

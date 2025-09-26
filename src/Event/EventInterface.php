@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Backslash\Domain;
+namespace Backslash\Event;
 
 /**
- * Represents an event in a domain model.
+ * Represents an event in a domain.
  */
 interface EventInterface
 {

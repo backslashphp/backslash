@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventStoreReductionInspection;
 
-use Backslash\Domain\RecordedEvent;
+use Backslash\Event\RecordedEvent;
 use Backslash\EventStore\Query\QueryInterface;
 
 class TestReducer implements ReductionInspectorInterface

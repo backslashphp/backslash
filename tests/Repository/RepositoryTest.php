@@ -13,8 +13,8 @@ use Backslash\PdoEventStore\JsonEventSerializer;
 use Backslash\PdoEventStore\JsonIdentifiersSerializer;
 use Backslash\PdoEventStore\JsonMetadataSerializer;
 use Backslash\PdoEventStore\PdoEventStoreAdapter;
-use Backslash\Shared\State\StudentNameState;
-use Backslash\Shared\State\StudentRegistrationState;
+use Backslash\Shared\Model\StudentNameChangeModel;
+use Backslash\Shared\Model\StudentRegistrationModel;
 use PDO;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -46,25 +46,25 @@ class RepositoryTest extends TestCase
     }
 
     /** @test */
-    public function it_creates_stores_and_loads_state(): void
+    public function it_creates_stores_and_loads_model(): void
     {
         $studentId = Uuid::uuid4()->toString();
 
         $this->assertFalse($this->testEventBusMiddleware->wasCalled());
 
-        /** @var StudentRegistrationState $state */
-        $state = $this->repository->load(StudentRegistrationState::class, StudentRegistrationState::getQuery($studentId));
-        $this->assertInstanceOf(StudentRegistrationState::class, $state);
-        $this->assertCount(0, $state->peekNewEvents());
+        /** @var StudentRegistrationModel $model */
+        $model = $this->repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery($studentId));
+        $this->assertInstanceOf(StudentRegistrationModel::class, $model);
+        $this->assertCount(0, $model->getChanges());
 
-        $state->subscribe($studentId, 'John Smith');
-        $this->assertCount(1, $state->peekNewEvents());
-        $this->repository->store($state);
+        $model->register($studentId, 'John Smith');
+        $this->assertCount(1, $model->getChanges());
+        $this->repository->storeChanges($model);
 
-        /** @var StudentNameState $state */
-        $state = $this->repository->load(StudentNameState::class, StudentNameState::getQuery($studentId));
-        $state->changeName('Jane Doe');
-        $this->repository->store($state);
+        /** @var StudentNameChangeModel $model */
+        $model = $this->repository->loadModel(StudentNameChangeModel::class, StudentNameChangeModel::getQuery($studentId));
+        $model->changeName('Jane Doe');
+        $this->repository->storeChanges($model);
 
         $this->assertTrue($this->testEventBusMiddleware->wasCalled());
     }
@@ -77,7 +77,7 @@ class RepositoryTest extends TestCase
         $this->repository->addMiddleware(new TestRepositoryMiddleware('mw2', $output));
         $this->repository->addMiddleware(new TestRepositoryMiddleware('mw3', $output));
 
-        $this->repository->load(StudentRegistrationState::class, EventClass::in());
+        $this->repository->loadModel(StudentRegistrationModel::class, EventClass::in());
         $this->assertEquals(
             $output,
             [

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventBus;
 
-use Backslash\Domain\RecordedEventStream;
+use Backslash\Event\RecordedEventStream;
 use PHPUnit\Framework\TestCase;
 
 class MiddlewareTest extends TestCase
