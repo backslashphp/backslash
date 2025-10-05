@@ -14,22 +14,25 @@ final class Inspector implements InspectorInterface
 {
     private EventBusInterface $eventBus;
 
+    private ?QueryInterface $query;
+
     /** @var ?callable */
     private $before;
 
     /** @var ?callable */
     private $after;
 
-    public function __construct(EventBusInterface $eventBus, ?callable $before = null, ?callable $after = null)
+    public function __construct(EventBusInterface $eventBus, ?QueryInterface $query = null, ?callable $before = null, ?callable $after = null)
     {
         $this->eventBus = $eventBus;
+        $this->query = $query;
         $this->before = $before;
         $this->after = $after;
     }
 
     public function getQuery(): ?QueryInterface
     {
-        return null;
+        return $this->query;
     }
 
     public function inspect(RecordedEvent $recordedEvent): void
