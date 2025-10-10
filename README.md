@@ -36,7 +36,7 @@ composer require backslashphp/backslash
 
 ## Documentation
 
-See https://github.com/backslashphp/docs for complete documentation.
+See https://backslashphp.github.io/docs/ for complete documentation.
 
 ## Testing
 
