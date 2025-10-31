@@ -6,6 +6,7 @@ namespace Backslash\PdoEventStore;
 
 use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
+use Backslash\EventNameResolver\EventNameResolverInterface;
 use Backslash\EventStore\Query\QueryInterface;
 use Backslash\Serializer\SerializerInterface;
 use UnexpectedValueException;
@@ -20,7 +21,7 @@ enum Driver: string
                 $config->getTable(),
                 $config->getAlias('sequence'),
                 $config->getAlias('event_uid'),
-                $config->getAlias('event_class'),
+                $config->getAlias('event_name'),
                 $config->getAlias('event_payload'),
                 $config->getAlias('event_payload'),
                 $config->getAlias('event_identifiers'),
@@ -36,7 +37,7 @@ enum Driver: string
                 $config->getTable(),
                 $config->getAlias('sequence'),
                 $config->getAlias('event_uid'),
-                $config->getAlias('event_class'),
+                $config->getAlias('event_name'),
                 $config->getAlias('event_payload'),
                 $config->getAlias('event_identifiers'),
                 $config->getAlias('event_metadata'),
@@ -103,6 +104,7 @@ enum Driver: string
         RecordedEventStream $stream,
         ?QueryInterface $concurrencyCheck,
         ?int $expectedSequence,
+        EventNameResolverInterface $eventNameResolver,
         SerializerInterface $eventSerializer,
         SerializerInterface $identifiersSerializer,
         SerializerInterface $metadataSerializer,
@@ -117,7 +119,7 @@ enum Driver: string
             $unionSelects[] = sprintf('SELECT %d `union_index`, ? `col1`, ? `col2`, ? `col3`, ? `col4`, ? `col5`, ? `col6`', $index);
             $values = array_merge($values, [
                 $eventIdGenerator(),
-                $recordedEvent->getEvent()::class,
+                $eventNameResolver->resolveName($recordedEvent->getEvent()::class),
                 $eventSerializer->serialize($recordedEvent->getEvent()),
                 $identifiersSerializer->serialize($recordedEvent->getEvent()->getIdentifiers()),
                 $metadataSerializer->serialize($recordedEvent->getMetadata()),
@@ -126,7 +128,7 @@ enum Driver: string
         }
         $unionSelects = implode(' UNION ', $unionSelects) . ' ORDER BY `union_index` ASC';
 
-        $concurrencyCheckWhere = new QueryToWhereClause($concurrencyCheck, $this, $config);
+        $concurrencyCheckWhere = new QueryToWhereClause($concurrencyCheck, $this, $config, $eventNameResolver);
         $values = array_merge($values, $concurrencyCheckWhere->getValues());
 
         $statement = match ($this) {
@@ -134,7 +136,7 @@ enum Driver: string
                 'INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) SELECT `col1`, `col2`, `col3`, `col4`, `col5`, `col6` FROM (%s) `union_selects` WHERE (SELECT IFNULL(MAX(`%s`), 0) FROM `%s` WHERE 1=1 AND %s) %s',
                 $config->getTable(),
                 $config->getAlias('event_uid'),
-                $config->getAlias('event_class'),
+                $config->getAlias('event_name'),
                 $config->getAlias('event_payload'),
                 $config->getAlias('event_identifiers'),
                 $config->getAlias('event_metadata'),
@@ -149,7 +151,7 @@ enum Driver: string
                 'INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) SELECT `col1`, `col2`, `col3`, `col4`, `col5`, `col6` FROM (%s) WHERE (SELECT IFNULL(MAX(`%s`), 0) FROM `%s` LEFT JOIN JSON_EACH(`%s`) ON JSON_VALID(`%s`) WHERE 1=1 AND %s) %s',
                 $config->getTable(),
                 $config->getAlias('event_uid'),
-                $config->getAlias('event_class'),
+                $config->getAlias('event_name'),
                 $config->getAlias('event_payload'),
                 $config->getAlias('event_identifiers'),
                 $config->getAlias('event_metadata'),

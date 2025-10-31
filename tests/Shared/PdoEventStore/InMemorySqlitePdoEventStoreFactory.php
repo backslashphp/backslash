@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\Shared\PdoEventStore;
 
+use Backslash\EventNameResolver\MatchingClassEventNameResolverAdapter;
 use Backslash\Pdo\PdoProxy;
 use Backslash\PdoEventStore\Config;
 use Backslash\PdoEventStore\JsonEventSerializer;
@@ -18,10 +19,12 @@ class InMemorySqlitePdoEventStoreFactory
     public static function build(): PdoEventStoreAdapter
     {
         $pdo = new PdoProxy(fn () => new PDO('sqlite::memory:'));
+        $eventNameResolver = new MatchingClassEventNameResolverAdapter();
         $adapter = new PdoEventStoreAdapter(
             $pdo,
             new Config(),
-            new JsonEventSerializer(),
+            $eventNameResolver,
+            new JsonEventSerializer($eventNameResolver),
             new JsonIdentifiersSerializer(),
             new JsonMetadataSerializer(),
             fn () => Uuid::uuid4()->toString(),

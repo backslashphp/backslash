@@ -6,6 +6,7 @@ namespace Backslash\PdoEventStore;
 
 use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
+use Backslash\EventNameResolver\EventNameResolverInterface;
 use Backslash\EventStore\AdapterInterface;
 use Backslash\EventStore\ConcurrencyException;
 use Backslash\EventStore\InspectorInterface;
@@ -22,6 +23,8 @@ final class PdoEventStoreAdapter implements AdapterInterface
 
     private Config $config;
 
+    private EventNameResolverInterface $eventNameResolver;
+
     private SerializerInterface $eventSerializer;
 
     private SerializerInterface $identifiersSerializer;
@@ -36,6 +39,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
     public function __construct(
         PdoInterface $pdo,
         Config $config,
+        EventNameResolverInterface $eventNameResolver,
         SerializerInterface $eventSerializer,
         SerializerInterface $identifiersSerializer,
         SerializerInterface $metadataSerializer,
@@ -43,6 +47,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
     ) {
         $this->pdo = $pdo;
         $this->config = $config;
+        $this->eventNameResolver = $eventNameResolver;
         $this->eventSerializer = $eventSerializer;
         $this->identifiersSerializer = $identifiersSerializer;
         $this->metadataSerializer = $metadataSerializer;
@@ -58,7 +63,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
 
     public function fetch(?QueryInterface $query, int $fromSequence = 0): StoredRecordedEventStream
     {
-        $whereClause = new QueryToWhereClause($query, $this->driver, $this->config);
+        $whereClause = new QueryToWhereClause($query, $this->driver, $this->config, $this->eventNameResolver);
         $sql = $this->driver->buildSelectStatement($fromSequence, $whereClause, $this->config);
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($whereClause->getValues());
@@ -82,6 +87,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
             $stream,
             $concurrencyCheck,
             $expectedSequence,
+            $this->eventNameResolver,
             $this->eventSerializer,
             $this->identifiersSerializer,
             $this->metadataSerializer,
@@ -102,7 +108,12 @@ final class PdoEventStoreAdapter implements AdapterInterface
 
     public function inspect(InspectorInterface $inspector): void
     {
-        $whereClause = new QueryToWhereClause($inspector->getQuery(), $this->driver, $this->config);
+        $whereClause = new QueryToWhereClause(
+            $inspector->getQuery(),
+            $this->driver,
+            $this->config,
+            $this->eventNameResolver,
+        );
         $sql = $this->driver->buildSelectStatement(0, $whereClause, $this->config);
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($whereClause->getValues());
@@ -130,7 +141,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
         return RecordedEvent::create(
             $this->eventSerializer->deserialize(
                 $row[$this->config->getAlias('event_payload')],
-                $row[$this->config->getAlias('event_class')],
+                $row[$this->config->getAlias('event_name')],
             ),
             $this->metadataSerializer->deserialize(
                 $row[$this->config->getAlias('event_metadata')],

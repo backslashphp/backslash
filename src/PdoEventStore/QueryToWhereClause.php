@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\PdoEventStore;
 
+use Backslash\EventNameResolver\EventNameResolverInterface;
 use Backslash\EventStore\Query\EventClass;
 use Backslash\EventStore\Query\EventTime;
 use Backslash\EventStore\Query\Identifier;
@@ -20,17 +21,24 @@ final class QueryToWhereClause
 
     private Config $config;
 
+    private EventNameResolverInterface $eventNameResolver;
+
     private string $statement;
 
     private array $values = [];
 
     private bool $resolved = false;
 
-    public function __construct(?QueryInterface $query, Driver $driver, Config $config)
-    {
+    public function __construct(
+        ?QueryInterface $query,
+        Driver $driver,
+        Config $config,
+        EventNameResolverInterface $eventNameResolver,
+    ) {
         $this->query = $query;
         $this->driver = $driver;
         $this->config = $config;
+        $this->eventNameResolver = $eventNameResolver;
     }
 
     public function getStatement(): string
@@ -61,14 +69,18 @@ final class QueryToWhereClause
         $query = $this->query;
         switch ($query::class) {
             case (EventClass::class):
+                $eventNames = array_map(
+                    fn ($item) => $this->eventNameResolver->resolveName((string) $item),
+                    $query->getValues(),
+                );
                 /** @var EventClass $query */
                 $statement = sprintf(
                     '%s %s (%s)',
-                    sprintf('`%s`', $this->config->getAlias('event_class')),
+                    sprintf('`%s`', $this->config->getAlias('event_name')),
                     $query->isNegative() ? 'NOT IN' : 'IN',
-                    implode(', ', array_fill(0, count($query->getValues()), '?')),
+                    implode(', ', array_fill(0, count($eventNames), '?')),
                 );
-                $this->values = array_merge($this->values, $query->getValues());
+                $this->values = array_merge($this->values, $eventNames);
                 break;
             case (Identifier::class):
                 /** @var Identifier $query */
@@ -130,7 +142,7 @@ final class QueryToWhereClause
             /** @var LogicOperator $operator */
             /** @var QueryInterface $subquery */
             foreach ($this->query->getSubqueries() as [$operator, $subquery]) {
-                $where = new self($subquery, $this->driver, $this->config);
+                $where = new self($subquery, $this->driver, $this->config, $this->eventNameResolver);
                 $this->values = array_merge($this->values, $where->getValues());
                 $statement .= sprintf(' %s (%s)', $operator->value, $where->getStatement());
             }

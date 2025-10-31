@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Backslash\Repository;
 
 use Backslash\EventBus\EventBus;
+use Backslash\EventNameResolver\MatchingClassEventNameResolverAdapter;
 use Backslash\EventStore\EventStore;
 use Backslash\EventStore\Query\EventClass;
 use Backslash\Pdo\PdoProxy;
@@ -30,10 +31,12 @@ class RepositoryTest extends TestCase
         parent::setUp();
 
         $pdo = new PdoProxy(fn () => new PDO('sqlite::memory:'));
+        $eventNameResolver = new MatchingClassEventNameResolverAdapter();
         $adapter = new PdoEventStoreAdapter(
             $pdo,
             new Config(),
-            new JsonEventSerializer(),
+            $eventNameResolver,
+            new JsonEventSerializer($eventNameResolver),
             new JsonIdentifiersSerializer(),
             new JsonMetadataSerializer(),
             fn () => Uuid::uuid4()->toString(),

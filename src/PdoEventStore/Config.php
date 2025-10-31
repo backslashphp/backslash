@@ -13,7 +13,7 @@ final class Config
     private array $aliases = [
         'sequence' => 'sequence',
         'event_uid' => 'event_uid',
-        'event_class' => 'event_class',
+        'event_name' => 'event_name',
         'event_identifiers' => 'event_identifiers',
         'event_payload' => 'event_payload',
         'event_metadata' => 'event_metadata',

@@ -7,6 +7,7 @@ namespace Backslash\Scenario;
 use Backslash\CommandDispatcher\Dispatcher;
 use Backslash\CommandDispatcher\DispatcherInterface;
 use Backslash\EventBus\EventBus;
+use Backslash\EventNameResolver\MatchingClassEventNameResolverAdapter;
 use Backslash\EventStore\EventStore;
 use Backslash\EventStore\EventStoreInterface;
 use Backslash\Pdo\PdoProxy;
@@ -40,10 +41,12 @@ final class Scenario
     ) {
         $this->eventBus = $eventBus ?? new EventBus();
         $this->dispatcher = $dispatcher ?? new Dispatcher();
+        $eventNameResolver = new MatchingClassEventNameResolverAdapter();
         $this->eventStore = $eventStore ?? new EventStore(new PdoEventStoreAdapter(
             new PdoProxy(fn () => new PDO('sqlite::memory:')),
             new Config(),
-            new JsonEventSerializer(),
+            $eventNameResolver,
+            new JsonEventSerializer($eventNameResolver),
             new JsonIdentifiersSerializer(),
             new JsonMetadataSerializer(),
             fn () => Uuid::uuid4()->toString(),
