@@ -3,7 +3,7 @@ title: "Backslash PHP Developer Guide"
 type: docs
 ---
 
-![](/backslashphp-logo.svg)
+![](/backslash/backslashphp-logo.svg)
 
 # Backslash PHP Developer Guide
 
