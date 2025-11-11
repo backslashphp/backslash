@@ -1,9 +1,9 @@
 ---
-title: "Backslash PHP Developer Guide"
+title: "Developer Guide"
 type: docs
 ---
 
-![](/backslash/backslashphp-logo.svg)
+![](/backslashphp-logo.svg)
 
 # Backslash PHP Developer Guide
 

@@ -1,4 +1,4 @@
-baseURL = 'https://backslashphp.github.io/backslash/'
+baseURL = 'https://backslashphp.github.io/'
 languageCode = 'en-ca'
 title = 'Backslash PHP Developer Guide'
 theme = 'book'
