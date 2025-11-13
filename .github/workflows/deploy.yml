@@ -41,7 +41,8 @@ jobs:
                 id: pages
                 uses: actions/configure-pages@v4
             -   name: Install dependencies
-                run: "cd docs && [[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
+                run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
+                working-directory: ./docs
             -   name: Build production website
                 env:
                     HUGO_ENVIRONMENT: production
@@ -51,6 +52,7 @@ jobs:
                     npm run build \
                       -- \
                       --baseURL "${{ steps.pages.outputs.base_url }}/"
+                working-directory: ./docs
             -   name: Copy to backslashphp/backslashphp.github.io
                 uses: peaceiris/actions-gh-pages@v4
                 with:
