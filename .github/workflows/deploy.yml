@@ -41,7 +41,7 @@ jobs:
                 id: pages
                 uses: actions/configure-pages@v4
             -   name: Install dependencies
-                run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
+                run: "cd docs && [[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
             -   name: Build production website
                 env:
                     HUGO_ENVIRONMENT: production
