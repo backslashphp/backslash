@@ -52,7 +52,7 @@ jobs:
                 run: |
                     npm run build \
                       -- \
-                      --baseURL "${{ steps.pages.outputs.base_url }}/"
+                      --baseURL "https://backslashphp.github.io/"
                 working-directory: ./docs
             -   name: Copy to backslashphp/backslashphp.github.io
                 uses: peaceiris/actions-gh-pages@v4
