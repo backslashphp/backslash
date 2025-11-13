@@ -1,11 +1,5 @@
 ---
-title: "Developer Guide"
-type: docs
+title: "CQRS & Event Sourcing for PHP"
+description: ""
+#lead: "Congrats on setting up a new Doks project!"
 ---
-
-![](/backslashphp-logo.svg)
-
-# Backslash PHP Developer Guide
-
-Modern PHP library for building event-sourced applications with CQRS. Fully compliant with
-the Dynamic Consistency Boundary [specification](https://dcb.events/specification/).
