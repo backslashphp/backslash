@@ -1,6 +1,7 @@
 <?php
 
 use PhpCsFixer\Config;
+use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
 
 $finder = PhpCsFixer\Finder::create()
     ->in(__DIR__ . '/src')
@@ -66,4 +67,5 @@ return (new Config())
     )
     ->setFinder($finder)
     ->setUsingCache(true)
-    ->setRiskyAllowed(true);
+    ->setRiskyAllowed(true)
+    ->setParallelConfig(ParallelConfigFactory::detect());
