@@ -59,4 +59,51 @@ class EventBusTraceMiddlewareTest extends TestCase
         $trace->stopTracing();
         $this->assertFalse($trace->isTracing());
     }
+
+    /** @test */
+    public function it_blocks_publishing_when_blocking_is_enabled(): void
+    {
+        $trace = new EventBusTraceMiddleware();
+        $trace->blockPublishing();
+
+        $publishedCount = 0;
+        $eventBus = new EventBus();
+        $eventBus->addMiddleware($trace);
+        $eventBus->subscribe(StudentRegisteredEvent::class, new class ($publishedCount) implements \Backslash\EventBus\EventHandlerInterface {
+            public function __construct(private int &$count) {}
+            public function handle(object $event): void {
+                $this->count++;
+            }
+        });
+
+        $eventBus->publish(new RecordedEventStream(
+            RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
+        ));
+
+        $this->assertEquals(0, $publishedCount, 'Event should not be published when blocking is enabled');
+    }
+
+    /** @test */
+    public function it_publishes_normally_after_unblocking(): void
+    {
+        $trace = new EventBusTraceMiddleware();
+        $trace->blockPublishing();
+        $trace->unblockPublishing();
+
+        $publishedCount = 0;
+        $eventBus = new EventBus();
+        $eventBus->addMiddleware($trace);
+        $eventBus->subscribe(StudentRegisteredEvent::class, new class ($publishedCount) implements \Backslash\EventBus\EventHandlerInterface {
+            public function __construct(private int &$count) {}
+            public function handle(object $event): void {
+                $this->count++;
+            }
+        });
+
+        $eventBus->publish(new RecordedEventStream(
+            RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
+        ));
+
+        $this->assertEquals(1, $publishedCount, 'Event should be published after unblocking');
+    }
 }

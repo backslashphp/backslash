@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Backslash\Scenario;
 
 use Backslash\CommandDispatcher\DispatcherInterface;
+use Backslash\Event\EventInterface;
+use Backslash\Event\Metadata;
+use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStoreInterface;
+use DateTimeImmutable;
 use Exception;
 
 final class Play
@@ -37,10 +41,23 @@ final class Play
 
     private ?string $expectedExceptionMessage = null;
 
-    public function withInitialEvents(RecordedEventStream|callable $stream): self
+    public function withInitialEvents(EventInterface|RecordedEventStream|callable ...$events): self
     {
         $clone = clone $this;
-        $clone->initialEvents = $stream;
+
+        // If single argument and it's a RecordedEventStream or callable, use it directly
+        if (count($events) === 1 && ($events[0] instanceof RecordedEventStream || is_callable($events[0]))) {
+            $clone->initialEvents = $events[0];
+            return $clone;
+        }
+
+        // Otherwise, wrap EventInterface instances in RecordedEvent
+        $recordedEvents = array_map(
+            fn($event) => RecordedEvent::create($event, new Metadata(), new DateTimeImmutable()),
+            $events
+        );
+
+        $clone->initialEvents = new RecordedEventStream(...$recordedEvents);
         return $clone;
     }
 
@@ -114,6 +131,7 @@ final class Play
         $expectedExceptionClassThrown = false;
         $expectedExceptionMessageThrown = false;
 
+        $eventBusTrace->blockPublishing();
         $eventBusTrace->stopTracing();
         $projectionTrace->stopTracing();
 
@@ -125,6 +143,7 @@ final class Play
             $dispatcher->dispatch($this->evaluate($command));
         }
 
+        $eventBusTrace->unblockPublishing();
         $eventBusTrace->startTracing();
         $projectionTrace->startTracing();
 

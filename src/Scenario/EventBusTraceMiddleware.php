@@ -14,6 +14,8 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
 
     private bool $tracing = false;
 
+    private bool $blocking = false;
+
     public function __construct()
     {
         $this->trace = new RecordedEventStream();
@@ -21,6 +23,10 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
 
     public function publish(RecordedEventStream $stream, EventStreamPublisherInterface $next): void
     {
+        if ($this->blocking) {
+            return;
+        }
+
         $next->publish($stream);
         if ($this->tracing) {
             $this->trace = $this->trace->withRecordedEvents(...$stream->getRecordedEvents());
@@ -54,5 +60,15 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
     public function getTracedEvents(): RecordedEventStream
     {
         return $this->trace;
+    }
+
+    public function blockPublishing(): void
+    {
+        $this->blocking = true;
+    }
+
+    public function unblockPublishing(): void
+    {
+        $this->blocking = false;
     }
 }
