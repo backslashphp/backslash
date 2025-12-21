@@ -259,11 +259,13 @@ final class Play
         }
 
         // WHEN - Execution phase
-        if (!$needsProjections) {
-            $eventBusTrace->unblockPublishing();
-        }
         $eventBusTrace->startTracing();
         $projectionTrace->startTracing();
+
+        // Only unblock if projections are needed
+        if ($needsProjections) {
+            $eventBusTrace->unblockPublishing();
+        }
 
         /* Commands and actions */
         foreach ($this->commands as $command) {

@@ -52,7 +52,7 @@ class GivenWhenThenTest extends TestCase
                     $this->assertCount(1, $events->getAll())
                 )
                 ->then(fn(PublishedEvents $events) =>
-                    $events->assertContains(StudentNameChangedEvent::class)
+                    $this->assertNotEmpty($events->getAllOf(StudentNameChangedEvent::class))
                 )
         );
     }
@@ -139,6 +139,13 @@ class GivenWhenThenTest extends TestCase
         $handlerCalled = 0;
 
         $eventBus = new EventBus();
+        // Subscribe to both events to count both given and when
+        $eventBus->subscribe(StudentRegisteredEvent::class, new class ($handlerCalled) implements \Backslash\EventBus\EventHandlerInterface {
+            public function __construct(private int &$count) {}
+            public function handle(object $event): void {
+                $this->count++;
+            }
+        });
         $eventBus->subscribe(StudentNameChangedEvent::class, new class ($handlerCalled) implements \Backslash\EventBus\EventHandlerInterface {
             public function __construct(private int &$count) {}
             public function handle(object $event): void {
@@ -169,7 +176,7 @@ class GivenWhenThenTest extends TestCase
         );
 
         // Projections updated because withProjections() was called
-        $this->assertEquals(2, $handlerCalled); // given + when
+        $this->assertEquals(2, $handlerCalled); // 1 for StudentRegistered in given + 1 for StudentNameChanged in when
     }
 
     /** @test */
@@ -226,7 +233,7 @@ class GivenWhenThenTest extends TestCase
                     $repo->storeChanges($model);
                 })
                 ->then(fn(PublishedEvents $events) =>
-                    $events->assertContains(StudentNameChangedEvent::class)
+                    $this->assertNotEmpty($events->getAllOf(StudentNameChangedEvent::class))
                 )
         );
     }
