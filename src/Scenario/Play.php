@@ -64,8 +64,8 @@ final class Play
 
         // Otherwise, wrap EventInterface instances in RecordedEvent
         $recordedEvents = array_map(
-            fn($event) => RecordedEvent::create($event, new Metadata(), new DateTimeImmutable()),
-            $events
+            fn ($event) => RecordedEvent::create($event, new Metadata(), new DateTimeImmutable()),
+            $events,
         );
 
         $clone->initialEvents = new RecordedEventStream(...$recordedEvents);
@@ -379,7 +379,7 @@ final class Play
         callable $assertion,
         PublishedEvents $events,
         UpdatedProjections $projections,
-        RepositoryInterface $repository
+        RepositoryInterface $repository,
     ): void {
         $reflection = new ReflectionFunction($assertion);
         $params = $reflection->getParameters();
@@ -399,7 +399,7 @@ final class Play
             PublishedEvents::class => $assertion($events),
             UpdatedProjections::class => $assertion($projections),
             RepositoryInterface::class => $assertion($repository),
-            default => $assertion()
+            default => $assertion(),
         };
     }
 

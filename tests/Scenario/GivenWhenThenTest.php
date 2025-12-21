@@ -4,20 +4,14 @@ declare(strict_types=1);
 
 namespace Backslash\Scenario;
 
-use Backslash\CommandDispatcher\Dispatcher;
-use Backslash\CommandDispatcher\HandlerInterface;
 use Backslash\EventBus\EventBus;
 use Backslash\EventStore\EventStore;
 use Backslash\EventStore\Query\Identifier;
 use Backslash\Model\AbstractModel;
-use Backslash\ProjectionStore\InMemoryProjectionStoreAdapter;
-use Backslash\ProjectionStore\ProjectionStore;
-use Backslash\Repository\Repository;
 use Backslash\Repository\RepositoryInterface;
 use Backslash\Shared\Event\StudentNameChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
-use Backslash\Shared\Projection\TestFooProjection;
 use PHPUnit\Framework\TestCase;
 
 class GivenWhenThenTest extends TestCase
@@ -28,7 +22,7 @@ class GivenWhenThenTest extends TestCase
     {
         parent::setUp();
         $this->scenario = new Scenario(
-            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build())
+            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
         );
     }
 
@@ -38,22 +32,24 @@ class GivenWhenThenTest extends TestCase
         $this->scenario->play(
             new Play()
                 ->given(
-                    new StudentRegisteredEvent('1', 'John')
+                    new StudentRegisteredEvent('1', 'John'),
                 )
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        Identifier::is('studentId', '1')
+                        Identifier::is('studentId', '1'),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
                 })
-                ->then(fn(PublishedEvents $events) =>
-                    $this->assertCount(1, $events->getAll())
+                ->then(
+                    fn (PublishedEvents $events) =>
+                    $this->assertCount(1, $events->getAll()),
                 )
-                ->then(fn(PublishedEvents $events) =>
-                    $this->assertNotEmpty($events->getAllOf(StudentNameChangedEvent::class))
-                )
+                ->then(
+                    fn (PublishedEvents $events) =>
+                    $this->assertNotEmpty($events->getAllOf(StudentNameChangedEvent::class)),
+                ),
         );
     }
 
@@ -64,15 +60,18 @@ class GivenWhenThenTest extends TestCase
 
         $eventBus = new EventBus();
         $eventBus->subscribe(StudentNameChangedEvent::class, new class ($handlerCalled) implements \Backslash\EventBus\EventHandlerInterface {
-            public function __construct(private int &$count) {}
-            public function handle(object $event): void {
+            public function __construct(private int &$count)
+            {
+            }
+            public function handle(object $event): void
+            {
                 $this->count++;
             }
         });
 
         $scenario = new Scenario(
             eventBus: $eventBus,
-            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build())
+            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
         );
 
         $scenario->play(
@@ -81,14 +80,15 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        Identifier::is('studentId', '1')
+                        Identifier::is('studentId', '1'),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
                 })
-                ->then(fn(PublishedEvents $events) =>
-                    $this->assertCount(1, $events->getAll())
-                )
+                ->then(
+                    fn (PublishedEvents $events) =>
+                    $this->assertCount(1, $events->getAll()),
+                ),
         );
 
         // Projections not updated because no then(UpdatedProjections) was used
@@ -102,15 +102,18 @@ class GivenWhenThenTest extends TestCase
 
         $eventBus = new EventBus();
         $eventBus->subscribe(StudentNameChangedEvent::class, new class ($handlerCalled) implements \Backslash\EventBus\EventHandlerInterface {
-            public function __construct(private int &$count) {}
-            public function handle(object $event): void {
+            public function __construct(private int &$count)
+            {
+            }
+            public function handle(object $event): void
+            {
                 $this->count++;
             }
         });
 
         $scenario = new Scenario(
             eventBus: $eventBus,
-            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build())
+            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
         );
 
         $scenario->play(
@@ -119,14 +122,15 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        Identifier::is('studentId', '1')
+                        Identifier::is('studentId', '1'),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
                 })
-                ->then(fn(UpdatedProjections $projections) =>
-                    $this->assertTrue(true)
-                )
+                ->then(
+                    fn (UpdatedProjections $projections) =>
+                    $this->assertTrue(true),
+                ),
         );
 
         // Projections updated because then(UpdatedProjections) was used
@@ -141,21 +145,27 @@ class GivenWhenThenTest extends TestCase
         $eventBus = new EventBus();
         // Subscribe to both events to count both given and when
         $eventBus->subscribe(StudentRegisteredEvent::class, new class ($handlerCalled) implements \Backslash\EventBus\EventHandlerInterface {
-            public function __construct(private int &$count) {}
-            public function handle(object $event): void {
+            public function __construct(private int &$count)
+            {
+            }
+            public function handle(object $event): void
+            {
                 $this->count++;
             }
         });
         $eventBus->subscribe(StudentNameChangedEvent::class, new class ($handlerCalled) implements \Backslash\EventBus\EventHandlerInterface {
-            public function __construct(private int &$count) {}
-            public function handle(object $event): void {
+            public function __construct(private int &$count)
+            {
+            }
+            public function handle(object $event): void
+            {
                 $this->count++;
             }
         });
 
         $scenario = new Scenario(
             eventBus: $eventBus,
-            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build())
+            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
         );
 
         $scenario->play(
@@ -165,14 +175,15 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        Identifier::is('studentId', '1')
+                        Identifier::is('studentId', '1'),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
                 })
-                ->then(fn(PublishedEvents $events) =>
-                    $this->assertCount(1, $events->getAll())
-                )
+                ->then(
+                    fn (PublishedEvents $events) =>
+                    $this->assertCount(1, $events->getAll()),
+                ),
         );
 
         // Projections updated because withProjections() was called
@@ -186,15 +197,18 @@ class GivenWhenThenTest extends TestCase
 
         $eventBus = new EventBus();
         $eventBus->subscribe(StudentNameChangedEvent::class, new class ($handlerCalled) implements \Backslash\EventBus\EventHandlerInterface {
-            public function __construct(private int &$count) {}
-            public function handle(object $event): void {
+            public function __construct(private int &$count)
+            {
+            }
+            public function handle(object $event): void
+            {
                 $this->count++;
             }
         });
 
         $scenario = new Scenario(
             eventBus: $eventBus,
-            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build())
+            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
         );
 
         $scenario->play(
@@ -204,14 +218,15 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        Identifier::is('studentId', '1')
+                        Identifier::is('studentId', '1'),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
                 })
-                ->then(fn(UpdatedProjections $projections) =>  // Even though we use UpdatedProjections
-                    $this->assertTrue(true)
-                )
+                ->then(
+                    fn (UpdatedProjections $projections) =>  // Even though we use UpdatedProjections
+                    $this->assertTrue(true),
+                ),
         );
 
         // Projections NOT updated because withoutProjections() overrides detection
@@ -227,14 +242,15 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        Identifier::is('studentId', '1')
+                        Identifier::is('studentId', '1'),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
                 })
-                ->then(fn(PublishedEvents $events) =>
-                    $this->assertNotEmpty($events->getAllOf(StudentNameChangedEvent::class))
-                )
+                ->then(
+                    fn (PublishedEvents $events) =>
+                    $this->assertNotEmpty($events->getAllOf(StudentNameChangedEvent::class)),
+                ),
         );
     }
 }
@@ -245,6 +261,11 @@ class TestStudentModel extends AbstractModel
     private string $studentId;
     private string $name;
 
+    public function changeName(string $newName): void
+    {
+        $this->record(new StudentNameChangedEvent($this->studentId, $this->name, $newName));
+    }
+
     protected function applyStudentRegisteredEvent(StudentRegisteredEvent $event): void
     {
         $this->studentId = $event->getStudentId();
@@ -254,10 +275,5 @@ class TestStudentModel extends AbstractModel
     protected function applyStudentNameChangedEvent(StudentNameChangedEvent $event): void
     {
         $this->name = $event->getNew();
-    }
-
-    public function changeName(string $newName): void
-    {
-        $this->record(new StudentNameChangedEvent($this->studentId, $this->name, $newName));
     }
 }

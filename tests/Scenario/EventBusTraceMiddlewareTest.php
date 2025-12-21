@@ -70,8 +70,11 @@ class EventBusTraceMiddlewareTest extends TestCase
         $eventBus = new EventBus();
         $eventBus->addMiddleware($trace);
         $eventBus->subscribe(StudentRegisteredEvent::class, new class ($publishedCount) implements \Backslash\EventBus\EventHandlerInterface {
-            public function __construct(private int &$count) {}
-            public function handle(object $event): void {
+            public function __construct(private int &$count)
+            {
+            }
+            public function handle(object $event): void
+            {
                 $this->count++;
             }
         });
@@ -94,8 +97,11 @@ class EventBusTraceMiddlewareTest extends TestCase
         $eventBus = new EventBus();
         $eventBus->addMiddleware($trace);
         $eventBus->subscribe(StudentRegisteredEvent::class, new class ($publishedCount) implements \Backslash\EventBus\EventHandlerInterface {
-            public function __construct(private int &$count) {}
-            public function handle(object $event): void {
+            public function __construct(private int &$count)
+            {
+            }
+            public function handle(object $event): void
+            {
                 $this->count++;
             }
         });

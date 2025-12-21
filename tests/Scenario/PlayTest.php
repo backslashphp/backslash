@@ -28,7 +28,9 @@ class PlayTest extends TestCase
 
         $handlerCallCount = 0;
         $handler = new class ($handlerCallCount) implements EventHandlerInterface {
-            public function __construct(private int &$count) {}
+            public function __construct(private int &$count)
+            {
+            }
 
             public function handle(object $event): void
             {
@@ -52,7 +54,7 @@ class PlayTest extends TestCase
                 ->withInitialEvents(
                     new StudentRegisteredEvent('1', 'John'),
                     new CourseCreatedEvent('123', 'MATH101', 'Mathematics'),
-                )
+                ),
         );
 
         // Events should NOT be published during setup
@@ -64,7 +66,9 @@ class PlayTest extends TestCase
     {
         $handlerCallCount = 0;
         $handler = new class ($handlerCallCount) implements EventHandlerInterface {
-            public function __construct(private int &$count) {}
+            public function __construct(private int &$count)
+            {
+            }
 
             public function handle(object $event): void
             {
@@ -80,10 +84,10 @@ class PlayTest extends TestCase
         // Pre-populate event store with an event
         $eventStore->append(
             new RecordedEventStream(
-                RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), new DateTimeImmutable())
+                RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), new DateTimeImmutable()),
             ),
             null,
-            null
+            null,
         );
 
         $scenario = new Scenario(
@@ -96,13 +100,13 @@ class PlayTest extends TestCase
         $scenario->play(
             new Play()
                 ->withProjections()  // Force projections ON to publish to handlers
-                ->doAction(function () use ($eventBus) {
+                ->doAction(function () use ($eventBus): void {
                     $eventBus->publish(
                         new RecordedEventStream(
-                            RecordedEvent::create(new StudentRegisteredEvent('2', 'Jane'), new Metadata(), new DateTimeImmutable())
-                        )
+                            RecordedEvent::create(new StudentRegisteredEvent('2', 'Jane'), new Metadata(), new DateTimeImmutable()),
+                        ),
                     );
-                })
+                }),
         );
 
         // Event should be published during doAction
@@ -113,7 +117,7 @@ class PlayTest extends TestCase
     public function it_maintains_backward_compatibility_with_recorded_event_stream(): void
     {
         $scenario = new Scenario(
-            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build())
+            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
         );
 
         $scenario->play(
@@ -121,9 +125,9 @@ class PlayTest extends TestCase
                 ->withInitialEvents(
                     new RecordedEventStream(
                         RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), new DateTimeImmutable()),
-                        RecordedEvent::create(new CourseCreatedEvent('123', 'MATH101', 'Math'), new Metadata(), new DateTimeImmutable())
-                    )
-                )
+                        RecordedEvent::create(new CourseCreatedEvent('123', 'MATH101', 'Math'), new Metadata(), new DateTimeImmutable()),
+                    ),
+                ),
         );
 
         // No exception should be thrown
@@ -134,16 +138,16 @@ class PlayTest extends TestCase
     public function it_maintains_backward_compatibility_with_callable(): void
     {
         $scenario = new Scenario(
-            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build())
+            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
         );
 
         $scenario->play(
             new Play()
                 ->withInitialEvents(
-                    fn() => new RecordedEventStream(
-                        RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), new DateTimeImmutable())
-                    )
-                )
+                    fn () => new RecordedEventStream(
+                        RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), new DateTimeImmutable()),
+                    ),
+                ),
         );
 
         // No exception should be thrown
