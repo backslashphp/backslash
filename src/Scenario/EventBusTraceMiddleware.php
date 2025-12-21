@@ -23,14 +23,17 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
 
     public function publish(RecordedEventStream $stream, EventStreamPublisherInterface $next): void
     {
+        // Always trace, even when blocking
+        if ($this->tracing) {
+            $this->trace = $this->trace->withRecordedEvents(...$stream->getRecordedEvents());
+        }
+
+        // Block publishing to handlers if needed
         if ($this->blocking) {
             return;
         }
 
         $next->publish($stream);
-        if ($this->tracing) {
-            $this->trace = $this->trace->withRecordedEvents(...$stream->getRecordedEvents());
-        }
     }
 
     public function startTracing(): void

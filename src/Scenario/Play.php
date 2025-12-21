@@ -11,8 +11,11 @@ use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStoreInterface;
+use Backslash\Repository\RepositoryInterface;
 use DateTimeImmutable;
 use Exception;
+use ReflectionFunction;
+use ReflectionNamedType;
 
 final class Play
 {
@@ -37,10 +40,18 @@ final class Play
     /** @var callable[] */
     private array $customAssertions = [];
 
+    /** @var callable[] */
+    private array $thenAssertions = [];
+
     private ?string $expectedException = null;
 
     private ?string $expectedExceptionMessage = null;
 
+    private ?bool $projectionsEnabled = null;
+
+    /**
+     * @deprecated Use given() instead. Will be removed in Backslash 3.x
+     */
     public function withInitialEvents(EventInterface|RecordedEventStream|callable ...$events): self
     {
         $clone = clone $this;
@@ -61,6 +72,9 @@ final class Play
         return $clone;
     }
 
+    /**
+     * @deprecated Use given() instead. Will be removed in Backslash 3.x
+     */
     public function withInitialCommands(object|callable ...$commands): self
     {
         $clone = clone $this;
@@ -70,6 +84,9 @@ final class Play
         return $clone;
     }
 
+    /**
+     * @deprecated Use when() instead. Will be removed in Backslash 3.x
+     */
     public function doAction(callable $action): self
     {
         $clone = clone $this;
@@ -77,6 +94,9 @@ final class Play
         return $clone;
     }
 
+    /**
+     * @deprecated Use when() instead. Will be removed in Backslash 3.x
+     */
     public function dispatch(object|callable ...$commands): self
     {
         $clone = clone $this;
@@ -86,6 +106,9 @@ final class Play
         return $clone;
     }
 
+    /**
+     * @deprecated Use then() instead. Will be removed in Backslash 3.x
+     */
     public function testEvents(callable $assertion): self
     {
         $clone = clone $this;
@@ -93,6 +116,9 @@ final class Play
         return $clone;
     }
 
+    /**
+     * @deprecated Use then() instead. Will be removed in Backslash 3.x
+     */
     public function testProjections(callable $assertion): self
     {
         $clone = clone $this;
@@ -100,6 +126,9 @@ final class Play
         return $clone;
     }
 
+    /**
+     * @deprecated Use then() instead. Will be removed in Backslash 3.x
+     */
     public function testThat(callable $assertion): self
     {
         $clone = clone $this;
@@ -107,6 +136,9 @@ final class Play
         return $clone;
     }
 
+    /**
+     * @deprecated Use thenExpectException() instead. Will be removed in Backslash 3.x
+     */
     public function expectException(string $exceptionClass): self
     {
         $clone = clone $this;
@@ -114,11 +146,86 @@ final class Play
         return $clone;
     }
 
+    /**
+     * @deprecated Use thenExpectExceptionMessage() instead. Will be removed in Backslash 3.x
+     */
     public function expectExceptionMessage(string $message): self
     {
         $clone = clone $this;
         $clone->expectedExceptionMessage = $message;
         return $clone;
+    }
+
+    public function withProjections(): self
+    {
+        $clone = clone $this;
+        $clone->projectionsEnabled = true;
+        return $clone;
+    }
+
+    public function withoutProjections(): self
+    {
+        $clone = clone $this;
+        $clone->projectionsEnabled = false;
+        return $clone;
+    }
+
+    public function given(object|callable ...$items): self
+    {
+        if (empty($items)) {
+            return $this;
+        }
+
+        $events = [];
+        $commands = [];
+
+        foreach ($items as $item) {
+            if ($item instanceof EventInterface || $item instanceof RecordedEventStream || is_callable($item)) {
+                $events[] = $item;
+            } else {
+                $commands[] = $item;
+            }
+        }
+
+        $clone = $this;
+        if (!empty($events)) {
+            $clone = $clone->withInitialEvents(...$events);
+        }
+        if (!empty($commands)) {
+            $clone = $clone->withInitialCommands(...$commands);
+        }
+
+        return $clone;
+    }
+
+    public function when(object|callable ...$items): self
+    {
+        $clone = clone $this;
+        foreach ($items as $item) {
+            if (is_callable($item)) {
+                $clone->actions[] = $item;
+            } else {
+                $clone->commands[] = $item;
+            }
+        }
+        return $clone;
+    }
+
+    public function then(callable $assertion): self
+    {
+        $clone = clone $this;
+        $clone->thenAssertions[] = $assertion;
+        return $clone;
+    }
+
+    public function thenExpectException(string $exceptionClass): self
+    {
+        return $this->expectException($exceptionClass);
+    }
+
+    public function thenExpectExceptionMessage(string $message): self
+    {
+        return $this->expectExceptionMessage($message);
     }
 
     public function run(
@@ -127,13 +234,21 @@ final class Play
         EventStoreInterface $eventStore,
         DispatcherInterface $dispatcher,
         ProjectionStoreTraceMiddleware $projectionTrace,
+        RepositoryInterface $repository,
     ): void {
         $expectedExceptionClassThrown = false;
         $expectedExceptionMessageThrown = false;
 
-        $eventBusTrace->blockPublishing();
+        // Detect if projections are needed
+        $needsProjections = $this->needsProjections();
+
+        // GIVEN - Setup phase
         $eventBusTrace->stopTracing();
         $projectionTrace->stopTracing();
+
+        if (!$needsProjections) {
+            $eventBusTrace->blockPublishing();
+        }
 
         if ($this->initialEvents) {
             $eventStore->append($this->evaluate($this->initialEvents), null, null);
@@ -143,7 +258,10 @@ final class Play
             $dispatcher->dispatch($this->evaluate($command));
         }
 
-        $eventBusTrace->unblockPublishing();
+        // WHEN - Execution phase
+        if (!$needsProjections) {
+            $eventBusTrace->unblockPublishing();
+        }
         $eventBusTrace->startTracing();
         $projectionTrace->startTracing();
 
@@ -168,7 +286,7 @@ final class Play
         }
         foreach ($this->actions as $action) {
             try {
-                $action();
+                $this->invokeAction($action, $repository, $dispatcher);
             } catch (Exception $e) {
                 $catched = false;
                 if ($this->expectedException && ($e instanceof $this->expectedException)) {
@@ -197,24 +315,113 @@ final class Play
             );
         }
 
-        /* Assertions */
+        /* THEN - Assertions */
         $publishedStreams = $eventBusTrace->getTracedEvents();
         $eventBusTrace->clearTrace();
-        foreach ($this->eventsAssertions as $assertion) {
-            $assertion(new PublishedEvents($publishedStreams));
-        }
-        $updatedProjections = $projectionTrace->getTracedProjections();
+        $publishedEvents = new PublishedEvents($publishedStreams);
+
+        $updatedProjections = new UpdatedProjections($projectionTrace->getTracedProjections());
         $projectionTrace->clearTrace();
+
+        // Old-style assertions (for backward compatibility)
+        foreach ($this->eventsAssertions as $assertion) {
+            $assertion($publishedEvents);
+        }
         foreach ($this->projectionsAssertions as $assertion) {
-            $assertion(new UpdatedProjections($updatedProjections));
+            $assertion($updatedProjections);
         }
         foreach ($this->customAssertions as $assertion) {
             $assertion();
+        }
+
+        // New-style then() assertions with automatic routing
+        foreach ($this->thenAssertions as $assertion) {
+            $this->invokeAssertion($assertion, $publishedEvents, $updatedProjections, $repository);
         }
     }
 
     private function evaluate(mixed $value): mixed
     {
         return is_callable($value) ? $value() : $value;
+    }
+
+    private function needsProjections(): bool
+    {
+        // Explicit override
+        if ($this->projectionsEnabled !== null) {
+            return $this->projectionsEnabled;
+        }
+
+        // Auto-detect from then() assertions
+        foreach ($this->thenAssertions as $assertion) {
+            $reflection = new ReflectionFunction($assertion);
+            $params = $reflection->getParameters();
+
+            if (!empty($params)) {
+                $type = $params[0]->getType();
+                if ($type instanceof ReflectionNamedType && $type->getName() === UpdatedProjections::class) {
+                    return true;
+                }
+            }
+        }
+
+        // Also check old-style projectionsAssertions for backward compatibility
+        if (!empty($this->projectionsAssertions)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function invokeAssertion(
+        callable $assertion,
+        PublishedEvents $events,
+        UpdatedProjections $projections,
+        RepositoryInterface $repository
+    ): void {
+        $reflection = new ReflectionFunction($assertion);
+        $params = $reflection->getParameters();
+
+        if (empty($params)) {
+            $assertion();
+            return;
+        }
+
+        $type = $params[0]->getType();
+        if (!($type instanceof ReflectionNamedType)) {
+            $assertion();
+            return;
+        }
+
+        match ($type->getName()) {
+            PublishedEvents::class => $assertion($events),
+            UpdatedProjections::class => $assertion($projections),
+            RepositoryInterface::class => $assertion($repository),
+            default => $assertion()
+        };
+    }
+
+    private function invokeAction(callable $action, RepositoryInterface $repository, DispatcherInterface $dispatcher): void
+    {
+        $reflection = new ReflectionFunction($action);
+        $params = $reflection->getParameters();
+
+        if (empty($params)) {
+            // Closure returns a command
+            $command = $action();
+            if ($command !== null) {
+                $dispatcher->dispatch($command);
+            }
+            return;
+        }
+
+        $type = $params[0]->getType();
+        if ($type instanceof ReflectionNamedType && $type->getName() === RepositoryInterface::class) {
+            // Closure works with repository
+            $action($repository);
+        } else {
+            // Fallback: just invoke
+            $action();
+        }
     }
 }

@@ -18,6 +18,8 @@ use Backslash\PdoEventStore\JsonMetadataSerializer;
 use Backslash\PdoEventStore\PdoEventStoreAdapter;
 use Backslash\ProjectionStore\InMemoryProjectionStoreAdapter;
 use Backslash\ProjectionStore\ProjectionStore;
+use Backslash\Repository\Repository;
+use Backslash\Repository\RepositoryInterface;
 use PDO;
 use Ramsey\Uuid\Uuid;
 
@@ -28,6 +30,8 @@ final class Scenario
     private DispatcherInterface $dispatcher;
 
     private EventStoreInterface $eventStore;
+
+    private RepositoryInterface $repository;
 
     private EventBusTraceMiddleware $eventBusTrace;
 
@@ -57,6 +61,7 @@ final class Scenario
         ($projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter()))->addMiddleware(
             $this->projectionStoreTrace,
         );
+        $this->repository = new Repository($this->eventStore, $this->eventBus);
     }
 
     public function play(Play ...$plays): void
@@ -68,6 +73,7 @@ final class Scenario
                 $this->eventStore,
                 $this->dispatcher,
                 $this->projectionStoreTrace,
+                $this->repository,
             );
         }
     }
