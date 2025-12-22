@@ -233,7 +233,7 @@ final class Play
         ScenarioEventBusMiddleware $eventBusTrace,
         EventStoreInterface $eventStore,
         DispatcherInterface $dispatcher,
-        ProjectionStoreTraceMiddleware $projectionTrace,
+        ScenarioProjectionStoreMiddleware $projectionTrace,
         RepositoryInterface $repository,
     ): void {
         $expectedExceptionClassThrown = false;

@@ -130,8 +130,8 @@ EventBus.publish() → EventHandlers (Projectors)
 - `Scenario.php` - Test orchestrator with in-memory event store
 - `Play.php` - Individual test scenario definition
 - `AssertionsTrait.php` - Assertion helpers
-- `EventBusTraceMiddleware.php` - Traces published events
-- `ProjectionStoreTraceMiddleware.php` - Traces projection updates
+- `ScenarioEventBusMiddleware.php` - Traces published events and blocks publishing during test setup
+- `ScenarioProjectionStoreMiddleware.php` - Traces projection updates
 - `PublishedEvents.php` - Event assertion helper
 - `UpdatedProjections.php` - Projection assertion helper
 - `Constraint/` - PHPUnit constraints for assertions

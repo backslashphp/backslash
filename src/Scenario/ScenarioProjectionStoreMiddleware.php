@@ -8,7 +8,7 @@ use Backslash\Projection\ProjectionInterface;
 use Backslash\ProjectionStore\MiddlewareInterface;
 use Backslash\ProjectionStore\ProjectionStoreInterface;
 
-final class ProjectionStoreTraceMiddleware implements MiddlewareInterface
+final class ScenarioProjectionStoreMiddleware implements MiddlewareInterface
 {
     /** @var ProjectionInterface[] */
     private array $trace = [];

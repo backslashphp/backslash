@@ -33,9 +33,9 @@ final class Scenario
 
     private RepositoryInterface $repository;
 
-    private ScenarioEventBusMiddleware $eventBusTrace;
+    private ScenarioEventBusMiddleware $eventBusMiddleware;
 
-    private ProjectionStoreTraceMiddleware $projectionStoreTrace;
+    private ScenarioProjectionStoreMiddleware $projectionStoreMiddleware;
 
     public function __construct(
         ?EventBus $eventBus = null,
@@ -55,11 +55,11 @@ final class Scenario
             new JsonMetadataSerializer(),
             fn () => Uuid::uuid4()->toString(),
         ));
-        $this->eventBusTrace = new ScenarioEventBusMiddleware();
-        $this->eventBus->addMiddleware($this->eventBusTrace);
-        $this->projectionStoreTrace = new ProjectionStoreTraceMiddleware();
+        $this->eventBusMiddleware = new ScenarioEventBusMiddleware();
+        $this->eventBus->addMiddleware($this->eventBusMiddleware);
+        $this->projectionStoreMiddleware = new ScenarioProjectionStoreMiddleware();
         ($projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter()))->addMiddleware(
-            $this->projectionStoreTrace,
+            $this->projectionStoreMiddleware,
         );
         $this->repository = new Repository($this->eventStore, $this->eventBus);
     }
@@ -69,10 +69,10 @@ final class Scenario
         foreach ($plays as $play) {
             $play->run(
                 $this->eventBus,
-                $this->eventBusTrace,
+                $this->eventBusMiddleware,
                 $this->eventStore,
                 $this->dispatcher,
-                $this->projectionStoreTrace,
+                $this->projectionStoreMiddleware,
                 $this->repository,
             );
         }
