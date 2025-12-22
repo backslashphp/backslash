@@ -14,11 +14,12 @@ use Backslash\EventBus\MiddlewareInterface;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\StreamEnricher\TestEnricher;
 use Backslash\StreamEnricher\StreamEnricherEventBusMiddleware;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class StreamEnricherEventBusMiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_enriches_stream(): void
     {
         $mw = new class () implements MiddlewareInterface {

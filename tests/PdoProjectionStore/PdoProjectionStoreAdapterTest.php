@@ -9,11 +9,12 @@ use Backslash\Serializer\SerializeFunctionSerializer;
 use Backslash\Pdo\PdoProxy;
 use Backslash\ProjectionStore\ProjectionStore;
 use PDO;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class PdoProjectionStoreAdapterTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_persists_with_pdo(): void
     {
         $pdo = new PdoProxy(

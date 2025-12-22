@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Backslash\ProjectionStore;
 
 use Backslash\Shared\Projection\TestFooProjection;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class TransactionTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_commits_and_rollbacks(): void
     {
         $store = new ProjectionStore(new InMemoryProjectionStoreAdapter());
@@ -28,7 +29,7 @@ class TransactionTest extends TestCase
         $this->assertTrue($store->has('123', TestFooProjection::class));
     }
 
-    /** @test */
+    #[Test]
     public function it_resets_unit_of_work_after_commit(): void
     {
         $adapter = new TestInMemoryProjectionStoreAdapter();

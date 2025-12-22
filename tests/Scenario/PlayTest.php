@@ -17,11 +17,12 @@ use Backslash\Shared\Event\CourseCreatedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class PlayTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_accepts_variadic_event_interfaces_in_with_initial_events(): void
     {
         $scenario = new Scenario();
@@ -61,7 +62,7 @@ class PlayTest extends TestCase
         $this->assertEquals(0, $handlerCallCount, 'Events should not be published during withInitialEvents setup');
     }
 
-    /** @test */
+    #[Test]
     public function it_publishes_events_during_dispatch(): void
     {
         $handlerCallCount = 0;
@@ -113,7 +114,7 @@ class PlayTest extends TestCase
         $this->assertEquals(1, $handlerCallCount, 'Events should be published during doAction');
     }
 
-    /** @test */
+    #[Test]
     public function it_maintains_backward_compatibility_with_recorded_event_stream(): void
     {
         $scenario = new Scenario(
@@ -134,7 +135,7 @@ class PlayTest extends TestCase
         $this->assertTrue(true);
     }
 
-    /** @test */
+    #[Test]
     public function it_maintains_backward_compatibility_with_callable(): void
     {
         $scenario = new Scenario(

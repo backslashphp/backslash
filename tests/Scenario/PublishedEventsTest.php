@@ -11,11 +11,12 @@ use Backslash\Event\RecordedEventStream;
 use Backslash\Shared\Event\CourseCreatedEvent;
 use Backslash\Shared\Event\StudentNameChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class PublishedEventsTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_counts_events(): void
     {
         $publishedEvents = new PublishedEvents($this->getRecordedEventStream());
@@ -23,7 +24,7 @@ class PublishedEventsTest extends TestCase
         $this->assertCount(3, $publishedEvents);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_events_of_type(): void
     {
         $publishedEvents = new PublishedEvents($this->getRecordedEventStream());
@@ -33,7 +34,7 @@ class PublishedEventsTest extends TestCase
         $this->assertCount(0, $publishedEvents->getAllOf(StudentNameChangedEvent::class));
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_all_events(): void
     {
         $publishedEvents = new PublishedEvents($this->getRecordedEventStream());

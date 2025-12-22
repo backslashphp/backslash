@@ -6,11 +6,12 @@ namespace Backslash\EventNameResolver;
 
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\Output;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class MiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_executes_middlewares_in_lifo_order(): void
     {
         $output = new Output();

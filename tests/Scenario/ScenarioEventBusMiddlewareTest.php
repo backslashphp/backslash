@@ -10,11 +10,12 @@ use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventBus;
 use Backslash\Shared\Event\StudentRegisteredEvent;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class ScenarioEventBusMiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_publish_a_recorded_event_stream_without_tracing(): void
     {
         $trace = new ScenarioEventBusMiddleware();
@@ -29,7 +30,7 @@ class ScenarioEventBusMiddlewareTest extends TestCase
         $this->assertEmpty($trace->getTracedEvents());
     }
 
-    /** @test */
+    #[Test]
     public function it_publish_a_recorded_event_stream_with_tracing(): void
     {
         $trace = new ScenarioEventBusMiddleware();
@@ -47,7 +48,7 @@ class ScenarioEventBusMiddlewareTest extends TestCase
         $this->assertEmpty($trace->getTracedEvents());
     }
 
-    /** @test */
+    #[Test]
     public function it_starts_and_stops_tracing(): void
     {
         $trace = new ScenarioEventBusMiddleware();
@@ -60,7 +61,7 @@ class ScenarioEventBusMiddlewareTest extends TestCase
         $this->assertFalse($trace->isTracing());
     }
 
-    /** @test */
+    #[Test]
     public function it_blocks_publishing_when_blocking_is_enabled(): void
     {
         $trace = new ScenarioEventBusMiddleware();
@@ -86,7 +87,7 @@ class ScenarioEventBusMiddlewareTest extends TestCase
         $this->assertEquals(0, $publishedCount, 'Event should not be published when blocking is enabled');
     }
 
-    /** @test */
+    #[Test]
     public function it_publishes_normally_after_unblocking(): void
     {
         $trace = new ScenarioEventBusMiddleware();

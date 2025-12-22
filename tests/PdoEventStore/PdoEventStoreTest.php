@@ -21,6 +21,7 @@ use Backslash\Shared\Event\StudentPreferredColorChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class PdoEventStoreTest extends TestCase
@@ -33,7 +34,7 @@ class PdoEventStoreTest extends TestCase
         $this->store = new EventStore(InMemorySqlitePdoEventStoreFactory::build());
     }
 
-    /** @test */
+    #[Test]
     public function it_stores_and_finds_stream(): void
     {
         $query = EventClass::in(StudentRegisteredEvent::class)
@@ -74,7 +75,7 @@ class PdoEventStoreTest extends TestCase
         $this->assertCount(0, $events);
     }
 
-    /** @test */
+    #[Test]
     public function it_prevents_concurrent_writes(): void
     {
         $this->expectException(ConcurrencyException::class);
@@ -107,7 +108,7 @@ class PdoEventStoreTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function it_finds_and_inspects_events(): void
     {
         $this->store->append(

@@ -19,7 +19,7 @@
     "require-dev": {
         "ext-pdo_sqlite": "*",
         "friendsofphp/php-cs-fixer": "^3",
-        "phpunit/phpunit": "^8 || ^9",
+        "phpunit/phpunit": "^12",
         "psr/container": "^2",
         "ramsey/uuid": "^4",
         "squizlabs/php_codesniffer": "^3",
@@ -35,8 +35,6 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Demo\\": "demo/src/",
-            "Demo\\Test\\": "demo/tests/",
             "Backslash\\": "tests/"
         }
     },

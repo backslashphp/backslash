@@ -10,11 +10,12 @@ use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\Shared\Event\StudentNameChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class EventHandlingTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_publishes_stream_to_subscribed_handlers(): void
     {
         $bus = new EventBus();

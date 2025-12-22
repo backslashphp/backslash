@@ -12,6 +12,7 @@ use Backslash\Repository\RepositoryInterface;
 use Backslash\Shared\Event\StudentNameChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class GivenWhenThenTest extends TestCase
@@ -26,7 +27,7 @@ class GivenWhenThenTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_given_when_then_syntax(): void
     {
         $this->scenario->play(
@@ -53,7 +54,7 @@ class GivenWhenThenTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function it_detects_projections_are_not_needed_automatically(): void
     {
         $handlerCalled = 0;
@@ -95,7 +96,7 @@ class GivenWhenThenTest extends TestCase
         $this->assertEquals(0, $handlerCalled);
     }
 
-    /** @test */
+    #[Test]
     public function it_detects_projections_are_needed_automatically(): void
     {
         $handlerCalled = 0;
@@ -137,7 +138,7 @@ class GivenWhenThenTest extends TestCase
         $this->assertEquals(1, $handlerCalled); // Only when, not given
     }
 
-    /** @test */
+    #[Test]
     public function it_supports_with_projections_flag(): void
     {
         $handlerCalled = 0;
@@ -190,7 +191,7 @@ class GivenWhenThenTest extends TestCase
         $this->assertEquals(2, $handlerCalled); // 1 for StudentRegistered in given + 1 for StudentNameChanged in when
     }
 
-    /** @test */
+    #[Test]
     public function it_supports_without_projections_flag(): void
     {
         $handlerCalled = 0;
@@ -233,7 +234,7 @@ class GivenWhenThenTest extends TestCase
         $this->assertEquals(0, $handlerCalled);
     }
 
-    /** @test */
+    #[Test]
     public function it_supports_when_with_repository_closure(): void
     {
         $this->scenario->play(

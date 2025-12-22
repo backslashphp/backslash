@@ -12,11 +12,12 @@ use Backslash\EventStore\EventStore;
 use Backslash\Shared\Event\CourseCreatedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class ReductionTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_reduces_events(): void
     {
         $eventStore = new EventStore(InMemorySqlitePdoEventStoreFactory::build());

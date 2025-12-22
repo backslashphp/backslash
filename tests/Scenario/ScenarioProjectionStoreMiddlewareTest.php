@@ -7,11 +7,12 @@ namespace Backslash\Scenario;
 use Backslash\Projection\ProjectionInterface;
 use Backslash\ProjectionStore\InMemoryProjectionStoreAdapter;
 use Backslash\ProjectionStore\ProjectionStore;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class ScenarioProjectionStoreMiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_stores_a_projection_without_tracing(): void
     {
         $trace = new ScenarioProjectionStoreMiddleware();
@@ -24,7 +25,7 @@ class ScenarioProjectionStoreMiddlewareTest extends TestCase
         $this->assertEmpty($trace->getTracedProjections());
     }
 
-    /** @test */
+    #[Test]
     public function it_stores_a_projection_with_tracing(): void
     {
         $trace = new ScenarioProjectionStoreMiddleware();
@@ -40,7 +41,7 @@ class ScenarioProjectionStoreMiddlewareTest extends TestCase
         $this->assertEmpty($trace->getTracedProjections());
     }
 
-    /** @test */
+    #[Test]
     public function it_starts_and_stops_tracing(): void
     {
         $trace = new ScenarioProjectionStoreMiddleware();

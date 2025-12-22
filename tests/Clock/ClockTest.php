@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Backslash\Clock;
 
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
 
@@ -23,11 +24,10 @@ class ClockTest extends TestCase
         // Use reflection to reset the static clock to null
         $reflection = new \ReflectionClass(Clock::class);
         $property = $reflection->getProperty('clock');
-        $property->setAccessible(true);
         $property->setValue(null, null);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_current_time_by_default(): void
     {
         $before = new DateTimeImmutable();
@@ -39,7 +39,7 @@ class ClockTest extends TestCase
         $this->assertLessThanOrEqual($after->getTimestamp(), $now->getTimestamp());
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_custom_clock_when_set(): void
     {
         $fixedTime = new DateTimeImmutable('2024-01-15 10:30:00');
@@ -60,7 +60,7 @@ class ClockTest extends TestCase
         $this->assertEquals($fixedTime, Clock::now()); // Should return same time consistently
     }
 
-    /** @test */
+    #[Test]
     public function it_can_change_custom_clock(): void
     {
         $firstTime = new DateTimeImmutable('2024-01-15 10:30:00');
@@ -95,7 +95,7 @@ class ClockTest extends TestCase
         $this->assertEquals($secondTime, Clock::now());
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_immutable_datetime(): void
     {
         $now = Clock::now();
@@ -103,7 +103,7 @@ class ClockTest extends TestCase
         $this->assertInstanceOf(DateTimeImmutable::class, $now);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_custom_clock_that_advances_time(): void
     {
         $baseTime = new DateTimeImmutable('2024-01-15 10:30:00');
@@ -134,7 +134,7 @@ class ClockTest extends TestCase
         $this->assertEquals(2, $third->getTimestamp() - $baseTime->getTimestamp());
     }
 
-    /** @test */
+    #[Test]
     public function it_maintains_custom_clock_across_multiple_calls(): void
     {
         $fixedTime = new DateTimeImmutable('2024-01-15 10:30:00');

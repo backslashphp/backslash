@@ -15,11 +15,12 @@ use Backslash\Shared\Event\CourseCreatedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class InspectorTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_publishes_all_inspected_events(): void
     {
         /** @var EventBusInterface|MockObject $eventBus */
@@ -36,7 +37,7 @@ class InspectorTest extends TestCase
         $eventStore->inspect(new Inspector($eventBus, EventClass::notIn()));
     }
 
-    /** @test */
+    #[Test]
     public function it_publishes_only_selected_inspected_events(): void
     {
         /** @var EventBusInterface|MockObject $eventBus */

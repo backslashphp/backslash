@@ -7,12 +7,13 @@ namespace Backslash\PdoTransactionCommandDispatcherMiddleware;
 use Backslash\CommandDispatcher\Dispatcher;
 use Backslash\Shared\CommandDispatcher\CallableTestHandler;
 use Backslash\Shared\CommandDispatcher\ConfigurableTestCommand;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_begins_and_commits_transaction_on_successful_dispatch(): void
     {
         $pdo = new TestPdo();
@@ -25,7 +26,7 @@ class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertFalse($pdo->inTransaction());
     }
 
-    /** @test */
+    #[Test]
     public function it_begins_and_rolls_back_transaction_on_exception(): void
     {
         $pdo = new TestPdo();
@@ -47,7 +48,7 @@ class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertFalse($pdo->inTransaction());
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_nested_command_dispatch(): void
     {
         $pdo = new TestPdo();
@@ -68,7 +69,7 @@ class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertFalse($pdo->inTransaction());
     }
 
-    /** @test */
+    #[Test]
     public function it_defers_safe_exceptions_until_transaction_commit(): void
     {
         $pdo = new TestPdo();
@@ -93,7 +94,7 @@ class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertFalse($pdo->inTransaction());
     }
 
-    /** @test */
+    #[Test]
     public function it_defers_multiple_safe_exceptions_in_nested_dispatches(): void
     {
         $pdo = new TestPdo();
@@ -129,7 +130,7 @@ class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertEquals(['beginTransaction', 'commit'], $pdo->getCalls());
     }
 
-    /** @test */
+    #[Test]
     public function it_rolls_back_on_unsafe_exception_even_with_deferred_safe_exceptions(): void
     {
         $pdo = new TestPdo();
@@ -163,7 +164,7 @@ class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertEquals(['beginTransaction', 'rollBack'], $pdo->getCalls());
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_when_transaction_already_started(): void
     {
         $pdo = new TestPdo();
@@ -178,7 +179,7 @@ class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
         $dispatcher->dispatch(new ConfigurableTestCommand());
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_when_not_in_transaction_on_commit(): void
     {
         $pdo = new TestPdo();
@@ -197,7 +198,7 @@ class PdoTransactionCommandDispatcherMiddlewareTest extends TestCase
         $dispatcher->dispatch(new ConfigurableTestCommand());
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_rollback_when_not_in_transaction(): void
     {
         $pdo = new TestPdo();
