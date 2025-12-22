@@ -254,6 +254,53 @@ class GivenWhenThenTest extends TestCase
                 ),
         );
     }
+
+    #[Test]
+    public function it_resets_blocking_state_between_plays(): void
+    {
+        $handlerCalled = 0;
+
+        $eventBus = new EventBus();
+        $eventBus->subscribe(StudentRegisteredEvent::class, new class ($handlerCalled) implements \Backslash\EventBus\EventHandlerInterface {
+            public function __construct(private int &$count)
+            {
+            }
+            public function handle(object $event): void
+            {
+                $this->count++;
+            }
+        });
+
+        $scenario = new Scenario(
+            eventBus: $eventBus,
+            eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
+        );
+
+        // Play 1: doesn't need projections (blocks publishing)
+        // Play 2: needs projections (should unblock for GIVEN phase)
+        $scenario->play(
+            new Play()
+                ->given(new StudentRegisteredEvent('1', 'John'))
+                ->when(function (RepositoryInterface $repo): void {
+                    // Do nothing
+                })
+                ->then(
+                    fn (PublishedEvents $events) =>
+                    $this->assertCount(0, $events->getAll()),
+                ),
+            new Play()
+                ->withProjections()  // Force projections ON
+                ->given(new StudentRegisteredEvent('2', 'Jane'))
+                ->then(
+                    fn (PublishedEvents $events) =>
+                    $this->assertTrue(true),
+                ),
+        );
+
+        // Should be 1 (only from Play 2's GIVEN), not 0
+        // If blocking state isn't reset, it will be 0
+        $this->assertEquals(1, $handlerCalled, 'Second play should have projections enabled during GIVEN');
+    }
 }
 
 // Test model

@@ -230,10 +230,10 @@ final class Play
 
     public function run(
         EventBusInterface $eventBus,
-        ScenarioEventBusMiddleware $eventBusTrace,
+        ScenarioEventBusMiddleware $eventBusMiddleware,
         EventStoreInterface $eventStore,
         DispatcherInterface $dispatcher,
-        ScenarioProjectionStoreMiddleware $projectionTrace,
+        ScenarioProjectionStoreMiddleware $projectionMiddleware,
         RepositoryInterface $repository,
     ): void {
         $expectedExceptionClassThrown = false;
@@ -243,11 +243,12 @@ final class Play
         $needsProjections = $this->needsProjections();
 
         // GIVEN - Setup phase
-        $eventBusTrace->stopTracing();
-        $projectionTrace->stopTracing();
+        $eventBusMiddleware->stopTracing();
+        $eventBusMiddleware->unblockPublishing(); // Reset to clean state
+        $projectionMiddleware->stopTracing();
 
         if (!$needsProjections) {
-            $eventBusTrace->blockPublishing();
+            $eventBusMiddleware->blockPublishing();
         }
 
         if ($this->initialEvents) {
@@ -259,12 +260,12 @@ final class Play
         }
 
         // WHEN - Execution phase
-        $eventBusTrace->startTracing();
-        $projectionTrace->startTracing();
+        $eventBusMiddleware->startTracing();
+        $projectionMiddleware->startTracing();
 
         // Only unblock if projections are needed
         if ($needsProjections) {
-            $eventBusTrace->unblockPublishing();
+            $eventBusMiddleware->unblockPublishing();
         }
 
         /* Commands and actions */
@@ -277,7 +278,7 @@ final class Play
                     $expectedExceptionClassThrown = true;
                     $catched = true;
                 }
-                if ($e->getMessage() ===  $this->expectedExceptionMessage) {
+                if ($e->getMessage() === $this->expectedExceptionMessage) {
                     $expectedExceptionMessageThrown = true;
                     $catched = true;
                 }
@@ -295,7 +296,7 @@ final class Play
                     $expectedExceptionClassThrown = true;
                     $catched = true;
                 }
-                if ($e->getMessage() ===  $this->expectedExceptionMessage) {
+                if ($e->getMessage() === $this->expectedExceptionMessage) {
                     $expectedExceptionMessageThrown = true;
                     $catched = true;
                 }
@@ -318,12 +319,12 @@ final class Play
         }
 
         /* THEN - Assertions */
-        $publishedStreams = $eventBusTrace->getTracedEvents();
-        $eventBusTrace->clearTrace();
+        $publishedStreams = $eventBusMiddleware->getTracedEvents();
+        $eventBusMiddleware->clearTrace();
         $publishedEvents = new PublishedEvents($publishedStreams);
 
-        $updatedProjections = new UpdatedProjections($projectionTrace->getTracedProjections());
-        $projectionTrace->clearTrace();
+        $updatedProjections = new UpdatedProjections($projectionMiddleware->getTracedProjections());
+        $projectionMiddleware->clearTrace();
 
         // Old-style assertions (for backward compatibility)
         foreach ($this->eventsAssertions as $assertion) {
@@ -376,9 +377,9 @@ final class Play
     }
 
     private function invokeAssertion(
-        callable $assertion,
-        PublishedEvents $events,
-        UpdatedProjections $projections,
+        callable            $assertion,
+        PublishedEvents     $events,
+        UpdatedProjections  $projections,
         RepositoryInterface $repository,
     ): void {
         $reflection = new ReflectionFunction($assertion);
