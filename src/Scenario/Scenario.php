@@ -42,6 +42,7 @@ final class Scenario
         ?DispatcherInterface $dispatcher = null,
         ?ProjectionStore $projectionStore = null,
         ?EventStoreInterface $eventStore = null,
+        ?RepositoryInterface $repository = null,
     ) {
         $this->eventBus = $eventBus ?? new EventBus();
         $this->dispatcher = $dispatcher ?? new Dispatcher();
@@ -61,7 +62,7 @@ final class Scenario
         ($projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter()))->addMiddleware(
             $this->projectionStoreMiddleware,
         );
-        $this->repository = new Repository($this->eventStore, $this->eventBus);
+        $this->repository = $repository ?? new Repository($this->eventStore, $this->eventBus);
     }
 
     public function play(Play ...$plays): void
