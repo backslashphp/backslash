@@ -509,29 +509,46 @@ try {
 
 ## Testing with Scenario
 
-Backslash provides a BDD-style testing component:
+Backslash provides a BDD-style testing component with Given-When-Then syntax:
 
 ```php
 $scenario = new Scenario();
 
 $scenario->play(
     new Play()
-        ->withInitialCommands(
-            new RegisterStudentCommand('123', 'Alice')
+        // GIVEN - Setup initial state
+        ->given(
+            new StudentRegisteredEvent('123', 'Alice')
         )
-        ->dispatch(new EnrollInCourseCommand('123', 'MATH101'))
-        ->testEvents(function (PublishedEvents $events) {
-            $events->assertContains(StudentEnrolledInCourse::class);
+        // WHEN - Execute action
+        ->when(
+            new EnrollInCourseCommand('123', 'MATH101')
+        )
+        // Or use a closure for direct model manipulation
+        ->when(function (RepositoryInterface $repo): void {
+            $student = $repo->loadModel(Student::class, Identifier::is('studentId', '123'));
+            $student->enrollInCourse('MATH101');
+            $repo->storeChanges($student);
         })
-        ->testProjections(function (UpdatedProjections $projections) {
-            $projections->assertUpdated('123', StudentProjection::class);
-        })
-        ->testThat(function (ProjectionStore $store) {
-            $student = $store->find('123', StudentProjection::class);
-            assert(in_array('MATH101', $student->getCourses()));
-        })
+        // THEN - Assert results
+        ->then(fn(PublishedEvents $events) =>
+            $this->assertNotEmpty($events->getAllOf(StudentEnrolledInCourse::class))
+        )
+        ->then(fn(UpdatedProjections $projections) =>
+            $projections->assertUpdated('123', StudentProjection::class)
+        )
+        ->then(fn(RepositoryInterface $repo) =>
+            $this->assertCount(1, $repo->loadModel(Student::class, ...)->getCourses())
+        )
 );
 ```
+
+**Key features:**
+- `given()` - accepts events or commands for setup
+- `when()` - accepts commands or closures with `RepositoryInterface`
+- `then()` - automatic parameter routing based on type hints
+- Automatic projection detection - projections only updated when needed
+- `withProjections()` / `withoutProjections()` - explicit control
 
 ## Key Features
 
