@@ -8,7 +8,7 @@ use Backslash\Scenario\UpdatedProjections;
 use PHPUnit\Framework\Constraint\Constraint;
 use ReflectionClass;
 
-final class ProjectionsMustContainExactly extends Constraint
+final class UpdatedProjectionsMustContainExactly extends Constraint
 {
     private int $count;
 

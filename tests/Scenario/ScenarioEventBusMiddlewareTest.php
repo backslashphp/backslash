@@ -12,12 +12,12 @@ use Backslash\EventBus\EventBus;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use PHPUnit\Framework\TestCase;
 
-class EventBusTraceMiddlewareTest extends TestCase
+class ScenarioEventBusMiddlewareTest extends TestCase
 {
     /** @test */
     public function it_publish_a_recorded_event_stream_without_tracing(): void
     {
-        $trace = new EventBusTraceMiddleware();
+        $trace = new ScenarioEventBusMiddleware();
         $trace->stopTracing();
 
         $eventBus = new EventBus();
@@ -32,7 +32,7 @@ class EventBusTraceMiddlewareTest extends TestCase
     /** @test */
     public function it_publish_a_recorded_event_stream_with_tracing(): void
     {
-        $trace = new EventBusTraceMiddleware();
+        $trace = new ScenarioEventBusMiddleware();
         $trace->startTracing();
 
         $eventBus = new EventBus();
@@ -50,7 +50,7 @@ class EventBusTraceMiddlewareTest extends TestCase
     /** @test */
     public function it_starts_and_stops_tracing(): void
     {
-        $trace = new EventBusTraceMiddleware();
+        $trace = new ScenarioEventBusMiddleware();
         $this->assertFalse($trace->isTracing());
 
         $trace->startTracing();
@@ -63,7 +63,7 @@ class EventBusTraceMiddlewareTest extends TestCase
     /** @test */
     public function it_blocks_publishing_when_blocking_is_enabled(): void
     {
-        $trace = new EventBusTraceMiddleware();
+        $trace = new ScenarioEventBusMiddleware();
         $trace->blockPublishing();
 
         $publishedCount = 0;
@@ -89,7 +89,7 @@ class EventBusTraceMiddlewareTest extends TestCase
     /** @test */
     public function it_publishes_normally_after_unblocking(): void
     {
-        $trace = new EventBusTraceMiddleware();
+        $trace = new ScenarioEventBusMiddleware();
         $trace->blockPublishing();
         $trace->unblockPublishing();
 

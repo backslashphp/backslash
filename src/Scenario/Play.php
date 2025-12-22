@@ -230,7 +230,7 @@ final class Play
 
     public function run(
         EventBusInterface $eventBus,
-        EventBusTraceMiddleware $eventBusTrace,
+        ScenarioEventBusMiddleware $eventBusTrace,
         EventStoreInterface $eventStore,
         DispatcherInterface $dispatcher,
         ProjectionStoreTraceMiddleware $projectionTrace,

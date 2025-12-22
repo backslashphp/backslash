@@ -33,7 +33,7 @@ final class Scenario
 
     private RepositoryInterface $repository;
 
-    private EventBusTraceMiddleware $eventBusTrace;
+    private ScenarioEventBusMiddleware $eventBusTrace;
 
     private ProjectionStoreTraceMiddleware $projectionStoreTrace;
 
@@ -55,7 +55,7 @@ final class Scenario
             new JsonMetadataSerializer(),
             fn () => Uuid::uuid4()->toString(),
         ));
-        $this->eventBusTrace = new EventBusTraceMiddleware();
+        $this->eventBusTrace = new ScenarioEventBusMiddleware();
         $this->eventBus->addMiddleware($this->eventBusTrace);
         $this->projectionStoreTrace = new ProjectionStoreTraceMiddleware();
         ($projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter()))->addMiddleware(

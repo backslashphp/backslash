@@ -8,7 +8,7 @@ use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventStreamPublisherInterface;
 use Backslash\EventBus\MiddlewareInterface;
 
-final class EventBusTraceMiddleware implements MiddlewareInterface
+final class ScenarioEventBusMiddleware implements MiddlewareInterface
 {
     private RecordedEventStream $trace;
 
