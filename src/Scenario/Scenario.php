@@ -37,6 +37,8 @@ final class Scenario
 
     private ScenarioProjectionStoreMiddleware $projectionStoreMiddleware;
 
+    private ProjectionStore $projectionStore;
+
     public function __construct(
         ?EventBus $eventBus = null,
         ?DispatcherInterface $dispatcher = null,
@@ -59,9 +61,8 @@ final class Scenario
         $this->eventBusMiddleware = new ScenarioEventBusMiddleware();
         $this->eventBus->addMiddleware($this->eventBusMiddleware);
         $this->projectionStoreMiddleware = new ScenarioProjectionStoreMiddleware();
-        ($projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter()))->addMiddleware(
-            $this->projectionStoreMiddleware,
-        );
+        $this->projectionStore = $projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter());
+        $this->projectionStore->addMiddleware($this->projectionStoreMiddleware);
         $this->repository = $repository ?? new Repository($this->eventStore, $this->eventBus);
     }
 
