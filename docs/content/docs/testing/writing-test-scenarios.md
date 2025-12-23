@@ -4,7 +4,7 @@ weight: 2
 ---
 
 The `Scenario` component provides a fluent, behavior-driven interface for testing event-sourced applications. It uses
-the `Play` class to define test scenarios in a readable, expressive manner.
+the `Play` class to define test scenarios in a readable, expressive Given-When-Then manner.
 
 ## Understanding scenarios
 
@@ -19,203 +19,235 @@ phase of the test, and subsequent plays see the effects of previous plays.
 
 ## Writing basic scenarios with Play
 
-Create test scenarios using the `Play` class. A Play defines:
+Create test scenarios using the `Play` class with the Given-When-Then pattern. A Play defines:
 
-- **Initial state** via `withInitialEvents()` or `withInitialCommands()`
-- **Actions** via `dispatch()` or `doAction()`
-- **Assertions** via `testEvents()`, `testProjections()`, or `testThat()`
-- **Expected exceptions** via `expectException()` or `expectExceptionMessage()`
+- **Initial state (Given)** via `given()` - accepts events or commands
+- **Actions (When)** via `when()` - accepts commands or closures
+- **Assertions (Then)** via `then()` - automatic parameter routing based on type hints
+- **Expected exceptions** via `thenExpectException()` or `thenExpectExceptionMessage()`
 
 The order of these methods matters: setup methods should come first, followed by actions, then assertions.
 
 Here's a basic example:
 
 ```php
-public function test_registering_student_publishes_event(): void
+#[Test]
+public function it_publishes_event_when_registering_student(): void
 {
     $this->scenario->play(
         new Play()
-            ->dispatch(new RegisterStudentCommand('1', 'John'))
-            ->testEvents(function (PublishedEvents $events) {
+            ->when(new RegisterStudentCommand('1', 'John'))
+            ->then(fn (PublishedEvents $events) =>
                 $this->assertPublishedEventsContainExactly([
                     StudentRegisteredEvent::class => 1,
-                ], $events);
-            })
+                ], $events)
+            )
     );
 }
 ```
 
-## Setting up initial state
+## Setting up initial state with given()
 
-Use `withInitialCommands()` to establish state by dispatching commands before the test action:
+Use `given()` to establish the initial state before executing your test action. The `given()` method accepts both events
+and commands, making it flexible for different testing scenarios.
+
+### Given with commands
+
+Commands passed to `given()` are dispatched before the main test action, setting up the required initial state:
 
 ```php
 $this->scenario->play(
     new Play()
-        ->withInitialCommands(
+        ->given(
             new DefineCourseCommand('123', 'PHP Basics', 10),
             new RegisterStudentCommand('1', 'Alice')
         )
-        ->dispatch(new SubscribeStudentToCourseCommand('1', '123'))
-        ->testEvents(function (PublishedEvents $events) {
+        ->when(new SubscribeStudentToCourseCommand('1', '123'))
+        ->then(fn (PublishedEvents $events) =>
             $this->assertPublishedEventsContain(
                 StudentSubscribedToCourseEvent::class,
                 $events
-            );
-        })
+            )
+        )
 );
 ```
 
-Commands passed to `withInitialCommands()` are dispatched before the main test action, setting up the required initial
-state.
+### Given with events
 
-Use `withInitialEvents()` to directly publish events for initial state:
+You can also use `given()` to directly set up state with events, which is useful when you want to bypass command
+validation or set up specific event sequences:
 
 ```php
-use Backslash\Event\RecordedEventStream;
-
-$initialEvents = new RecordedEventStream([
-    new RecordedEvent(
-        new CourseDefinedEvent('123', 'PHP Basics', 10),
-        new Metadata([]),
-        new DateTimeImmutable()
-    ),
-]);
-
 $this->scenario->play(
     new Play()
-        ->withInitialEvents($initialEvents)
-        ->dispatch(new ChangeCourseCapacityCommand('123', 20))
-        ->testEvents(function (PublishedEvents $events) {
+        ->given(
+            new CourseDefinedEvent('123', 'PHP Basics', 10)
+        )
+        ->when(new ChangeCourseCapacityCommand('123', 20))
+        ->then(fn (PublishedEvents $events) =>
             $this->assertPublishedEventsContain(
                 CourseCapacityChangedEvent::class,
                 $events
-            );
-        })
+            )
+        )
 );
 ```
 
-## Dispatching commands
+The `given()` method automatically wraps raw events in `RecordedEvent` instances with appropriate metadata.
 
-Use `dispatch()` to execute one or more commands:
+## Executing actions with when()
+
+The `when()` method is the heart of your test - it defines what action you're testing. It accepts both commands and
+closures, giving you flexibility in how you trigger the behavior under test.
+
+### When with commands
+
+Pass commands to `when()` to execute them through the normal command handling flow:
 
 ```php
 $this->scenario->play(
     new Play()
-        ->dispatch(
+        ->when(
             new RegisterStudentCommand('1', 'John'),
             new RegisterStudentCommand('2', 'Alice')
         )
-        ->testEvents(function (PublishedEvents $events) {
-            $this->assertPublishedEventsCount(2, $events);
-        })
+        ->then(fn (PublishedEvents $events) =>
+            $this->assertPublishedEventsCount(2, $events)
+        )
 );
 ```
 
-Commands are dispatched through the normal command handling flow, including all middleware and handlers.
+### When with closures
 
-## Executing actions
-
-Use `doAction()` to execute arbitrary code during the test. Common use cases include:
-
-- Defining constants or variables needed by subsequent assertions
-- Setting up mocks or stubs
-- Manipulating time or other external dependencies
-
-Example:
+Use closures with `when()` to execute custom logic during the test. The closure can receive a `RepositoryInterface`
+parameter for direct model manipulation:
 
 ```php
 $this->scenario->play(
     new Play()
-        ->withInitialCommands(new DefineCourseCommand('123', 'PHP Basics', 10))
-        ->doAction(function () {
-            // Define a constant for use in later assertions
+        ->given(new StudentRegisteredEvent('1', 'John'))
+        ->when(function (RepositoryInterface $repo): void {
+            $model = $repo->loadModel(
+                Student::class,
+                Identifier::is('studentId', '1')
+            );
+            $model->changeName('Jane');
+            $repo->storeChanges($model);
+        })
+        ->then(fn (PublishedEvents $events) =>
+            $this->assertNotEmpty($events->getAllOf(StudentNameChangedEvent::class))
+        )
+);
+```
+
+Closures can also be used for other purposes like defining constants or setting up test data:
+
+```php
+$this->scenario->play(
+    new Play()
+        ->given(new DefineCourseCommand('123', 'PHP Basics', 10))
+        ->when(function (): void {
             define('MY_CONSTANT', 'some-value');
         })
-        ->dispatch(new ChangeCourseCapacityCommand('123', 20))
-        ->testEvents(function (PublishedEvents $events) {
-            $this->assertPublishedEventsCount(1, $events);
-        })
-        ->testThat(function () {
-            // Verify the constant was defined
-            $this->assertTrue(defined('MY_CONSTANT'));
-        })
+        ->when(new ChangeCourseCapacityCommand('123', 20))
+        ->then(fn () => $this->assertTrue(defined('MY_CONSTANT')))
 );
 ```
 
-Actions execute in the order they're defined relative to commands.
+Multiple `when()` calls execute in the order they're defined.
 
-## Asserting on published events
+## Writing assertions with then()
 
-Use `testEvents()` to verify which events were published:
+The `then()` method is where you verify the results of your test. It supports automatic parameter routing based on type
+hints, allowing you to assert on events, projections, or use the repository directly.
+
+### Asserting on published events
+
+Use `then()` with a `PublishedEvents` parameter to verify which events were published:
 
 ```php
 $this->scenario->play(
     new Play()
-        ->dispatch(new RegisterStudentCommand('1', 'John'))
-        ->testEvents(function (PublishedEvents $events) {
-            // Assert specific event was published
+        ->when(new RegisterStudentCommand('1', 'John'))
+        ->then(fn (PublishedEvents $events) =>
+            $this->assertPublishedEventsContainExactly([
+                StudentRegisteredEvent::class => 1,
+            ], $events)
+        )
+        ->then(function (PublishedEvents $events) {
+            // You can also use a full closure for more complex assertions
             $this->assertPublishedEventsContain(
                 StudentRegisteredEvent::class,
                 $events
             );
-            
-            // Assert event count
             $this->assertPublishedEventsCount(1, $events);
-            
-            // Assert exact event types and counts
-            $this->assertPublishedEventsContainExactly([
-                StudentRegisteredEvent::class => 1,
-            ], $events);
         })
 );
 ```
 
-The `testEvents()` callback receives a `PublishedEvents` object containing all events published **during this play only
-**. Events from previous plays or initial setup are not included in this collection.
+The `PublishedEvents` parameter contains all events published **during the when() phase only**. Events from the given()
+phase are not included in this collection.
 
-## Asserting on updated projections
+### Asserting on updated projections
 
-Use `testProjections()` to verify which projections were updated:
+Use `then()` with an `UpdatedProjections` parameter to verify which projections were updated:
 
 ```php
 $this->scenario->play(
     new Play()
-        ->withInitialCommands(
+        ->given(
             new DefineCourseCommand('123', 'PHP Basics', 10),
             new RegisterStudentCommand('1', 'John')
         )
-        ->dispatch(new SubscribeStudentToCourseCommand('1', '123'))
-        ->testProjections(function (UpdatedProjections $projections) {
-            // Assert specific projection was updated
+        ->when(new SubscribeStudentToCourseCommand('1', '123'))
+        ->then(fn (UpdatedProjections $projections) =>
             $this->assertUpdatedProjectionsContain(
                 StudentListProjection::class,
                 $projections
-            );
-            
-            // Access updated projections
+            )
+        )
+        ->then(function (UpdatedProjections $projections) {
+            // Access updated projections directly
             $studentList = $projections->getAllOf(StudentListProjection::class)[0];
             $this->assertStringContainsString('John (PHP Basics)', (string) $studentList);
         })
 );
 ```
 
-The `testProjections()` callback receives an `UpdatedProjections` object containing projections modified **during this
-play only**. Projections updated in previous plays are not included.
+The `UpdatedProjections` parameter contains projections modified **during the when() phase only**. Projections updated
+during given() are not included.
 
 Use `getAllOf()` to retrieve all updated projections of a specific type. This returns an array because multiple
 projection instances of the same class can be updated in a single play (for example, updating both `CourseProjection`
-for course-123 and `CourseProjection` for course-456). Access individual projections by array index.
+for course-123 and `CourseProjection` for course-456).
 
-## Custom assertions
+### Custom assertions with repository
 
-Use `testThat()` for custom assertion logic:
+Use `then()` with a `RepositoryInterface` parameter to load and verify model state directly:
 
 ```php
 $this->scenario->play(
     new Play()
-        ->dispatch(new RegisterStudentCommand('1', 'John'))
-        ->testThat(function () {
+        ->when(new RegisterStudentCommand('1', 'John'))
+        ->then(function (RepositoryInterface $repo) {
+            $student = $repo->loadModel(
+                Student::class,
+                Identifier::is('studentId', '1')
+            );
+            $this->assertEquals('John', $student->getName());
+        })
+);
+```
+
+### Custom assertions without parameters
+
+Use `then()` with no parameters for arbitrary assertion logic:
+
+```php
+$this->scenario->play(
+    new Play()
+        ->when(new RegisterStudentCommand('1', 'John'))
+        ->then(function () {
             $projection = $this->projectionStore->find(
                 StudentListProjection::ID,
                 StudentListProjection::class
@@ -225,48 +257,57 @@ $this->scenario->play(
 );
 ```
 
-The `testThat()` callback executes after commands and actions, allowing arbitrary assertions.
+All `then()` callbacks execute after the when() phase completes, and you can chain multiple `then()` calls with
+different parameter types.
 
 ## Testing business rule violations
 
-Test that commands throw exceptions using `expectException()`:
+Test that commands throw exceptions using `thenExpectException()`:
 
 ```php
-public function test_cannot_subscribe_to_full_course(): void
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
+use PHPUnit\Framework\Attributes\Test;
+
+#[Test]
+#[DoesNotPerformAssertions]
+public function it_prevents_subscription_to_full_course(): void
 {
     $this->scenario->play(
         new Play()
-            ->expectException(CourseAtFullCapacityException::class)
-            ->withInitialCommands(
+            ->given(
                 new DefineCourseCommand('123', 'PHP Basics', 1),
                 new RegisterStudentCommand('1', 'John'),
                 new RegisterStudentCommand('2', 'Alice'),
                 new SubscribeStudentToCourseCommand('1', '123')
             )
-            ->dispatch(new SubscribeStudentToCourseCommand('2', '123'))
+            ->when(new SubscribeStudentToCourseCommand('2', '123'))
+            ->thenExpectException(CourseAtFullCapacityException::class)
     );
 }
 ```
 
-When `expectException()` is used, the test passes only if the expected exception is thrown. Use the
-`@doesNotPerformAssertions` PHPUnit annotation to avoid warnings; PHPUnit expects at least one assertion per test, but
-with `expectException()` alone, PHPUnit doesn't recognize it as an assertion, so the annotation tells PHPUnit this is
-intentional.
+When `thenExpectException()` is used, the test passes only if the expected exception is thrown during the when() phase.
+Use the `#[DoesNotPerformAssertions]` PHPUnit attribute to avoid warnings about tests without assertions.
 
-Test for specific exception messages using `expectExceptionMessage()`:
+Test for specific exception messages using `thenExpectExceptionMessage()`:
 
 ```php
-$this->scenario->play(
-    new Play()
-        ->expectExceptionMessage('Course is at full capacity')
-        ->withInitialCommands(
-            new DefineCourseCommand('123', 'PHP Basics', 1),
-            new RegisterStudentCommand('1', 'John'),
-            new RegisterStudentCommand('2', 'Alice'),
-            new SubscribeStudentToCourseCommand('1', '123')
-        )
-        ->dispatch(new SubscribeStudentToCourseCommand('2', '123'))
-);
+#[Test]
+#[DoesNotPerformAssertions]
+public function it_shows_helpful_error_message_for_full_course(): void
+{
+    $this->scenario->play(
+        new Play()
+            ->given(
+                new DefineCourseCommand('123', 'PHP Basics', 1),
+                new RegisterStudentCommand('1', 'John'),
+                new RegisterStudentCommand('2', 'Alice'),
+                new SubscribeStudentToCourseCommand('1', '123')
+            )
+            ->when(new SubscribeStudentToCourseCommand('2', '123'))
+            ->thenExpectExceptionMessage('Course is at full capacity')
+    );
+}
 ```
 
 ## Chaining multiple plays
@@ -275,29 +316,30 @@ A scenario can execute multiple plays sequentially, like acts in a theater piece
 of the test:
 
 ```php
-public function test_subscription_lifecycle(): void
+#[Test]
+public function it_handles_complete_subscription_lifecycle(): void
 {
     $subscribe = new Play()
-        ->withInitialCommands(
+        ->given(
             new DefineCourseCommand('123', 'PHP Basics', 10),
             new RegisterStudentCommand('1', 'John')
         )
-        ->dispatch(new SubscribeStudentToCourseCommand('1', '123'))
-        ->testEvents(function (PublishedEvents $events) {
+        ->when(new SubscribeStudentToCourseCommand('1', '123'))
+        ->then(fn (PublishedEvents $events) =>
             $this->assertPublishedEventsContain(
                 StudentSubscribedToCourseEvent::class,
                 $events
-            );
-        });
+            )
+        );
 
     $unsubscribe = new Play()
-        ->dispatch(new UnsubscribeStudentFromCourseCommand('1', '123'))
-        ->testEvents(function (PublishedEvents $events) {
+        ->when(new UnsubscribeStudentFromCourseCommand('1', '123'))
+        ->then(fn (PublishedEvents $events) =>
             $this->assertPublishedEventsContain(
                 StudentUnsubscribedFromCourseEvent::class,
                 $events
-            );
-        });
+            )
+        );
 
     $this->scenario->play($subscribe, $unsubscribe);
 }
@@ -312,31 +354,25 @@ while keeping each phase clearly defined and testable.
 Here's a comprehensive example demonstrating all Play features and assertions:
 
 ```php
-public function test_subscription_workflow(): void
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
+use PHPUnit\Framework\Attributes\Test;
+
+#[Test]
+public function it_manages_complete_subscription_workflow(): void
 {
     $studentId = '1';
     $courseId = '2';
 
     $subscribe = new Play()
-        ->withInitialEvents(
-            new RecordedEventStream(
-                RecordedEvent::create(
-                    new CourseDefinedEvent($courseId, 'Maths', 30),
-                    new Metadata(),
-                    new DateTimeImmutable(),
-                ),
-            ),
-        )
-        ->withInitialCommands(
+        ->given(
+            new CourseDefinedEvent($courseId, 'Maths', 30),
             new RegisterStudentCommand($studentId, 'John'),
         )
-        ->dispatch(
-            new SubscribeStudentToCourseCommand($studentId, $courseId),
-        )
-        ->doAction(function (): void {
+        ->when(new SubscribeStudentToCourseCommand($studentId, $courseId))
+        ->when(function (): void {
             define('MY_CONSTANT', 'some-value');
         })
-        ->testEvents(function (PublishedEvents $events) use ($studentId, $courseId): void {
+        ->then(function (PublishedEvents $events) use ($studentId, $courseId): void {
             $this->assertPublishedEventsCount(1, $events);
             $this->assertPublishedEventsContainOnly(StudentSubscribedToCourseEvent::class, $events);
             $this->assertPublishedEventsDoNotContain(StudentUnsubscribedFromCourseEvent::class, $events);
@@ -346,52 +382,130 @@ public function test_subscription_workflow(): void
             $this->assertEquals($studentId, $event->studentId);
             $this->assertEquals($courseId, $event->courseId);
         })
-        ->testProjections(function (UpdatedProjections $projections): void {
-            $this->assertUpdatedProjectionsCount(2, $projections);
+        ->then(fn (UpdatedProjections $projections) =>
             $this->assertUpdatedProjectionsContainExactly([
                 CourseListProjection::class => 1,
                 StudentListProjection::class => 1,
-            ], $projections);
-        })
-        ->testThat(function (): void {
-            defined('MY_CONSTANT');
-        });
+            ], $projections)
+        )
+        ->then(fn () => $this->assertTrue(defined('MY_CONSTANT')));
 
     $unsubscribe = new Play()
-        ->dispatch(
-            new UnsubscribeStudentFromCourseCommand($studentId, $courseId),
-        )
-        ->testEvents(function (PublishedEvents $events) use ($studentId, $courseId): void {
+        ->when(new UnsubscribeStudentFromCourseCommand($studentId, $courseId))
+        ->then(fn (PublishedEvents $events) =>
             $this->assertPublishedEventsContainExactly([
                 StudentUnsubscribedFromCourseEvent::class => 1,
-            ], $events);
-        });
-
-    $oops = new Play()
-        ->expectException(StudentNotSubscribedToCourseException::class)
-        ->dispatch(
-            new UnsubscribeStudentFromCourseCommand($studentId, $courseId),
+            ], $events)
         );
 
-    $this->scenario->play(
-        $subscribe,
-        $unsubscribe,
-        $oops,
-    );
+    $oops = new Play()
+        ->when(new UnsubscribeStudentFromCourseCommand($studentId, $courseId))
+        ->thenExpectException(StudentNotSubscribedToCourseException::class);
+
+    $this->scenario->play($subscribe, $unsubscribe, $oops);
 }
 ```
 
 This example demonstrates:
 
-- **withInitialEvents()**: Setting up state with a `RecordedEventStream`
-- **withInitialCommands()**: Dispatching commands for initial setup
-- **dispatch()**: Executing the main test command
-- **doAction()**: Running arbitrary code during the test
-- **testEvents()**: Comprehensive event assertions including count, type, and content verification
-- **testProjections()**: Verifying projection updates with exact counts
-- **testThat()**: Custom assertion logic
-- **expectException()**: Testing business rule violations
+- **given()**: Setting up state with both events and commands
+- **when()**: Executing commands and arbitrary actions
+- **then()** with **PublishedEvents**: Comprehensive event assertions including count, type, and content verification
+- **then()** with **UpdatedProjections**: Verifying projection updates with exact counts
+- **then()** with **no parameters**: Custom assertion logic
+- **thenExpectException()**: Testing business rule violations
 - **Multiple plays**: Three sequential plays representing different phases of the workflow
+
+## Optimizing test performance with event publishing modes
+
+By default, events generated in both `given()` and `when()` phases are published to the event bus, which triggers
+projection updates. This ensures backwards compatibility and predictable behavior. However, for better performance, you
+can optimize when events are published.
+
+### Automatic projection detection (DETECT mode)
+
+The `EventPublishingMode::DETECT` mode automatically analyzes your test to determine if projections are needed:
+
+- Events in `given()` are **NOT published** (test setup only)
+- Events in `when()` are **published only if** your assertions reference `UpdatedProjections`
+- More efficient as projections are only updated when actually needed for assertions
+
+Enable this mode at the scenario level:
+
+```php
+use Backslash\Scenario\EventPublishingMode;
+
+class StudentTest extends TestCase
+{
+    private Scenario $scenario;
+
+    protected function setUp(): void
+    {
+        $this->scenario = new Scenario();
+        $this->scenario->setEventPublishingMode(EventPublishingMode::DETECT);
+    }
+}
+```
+
+With DETECT mode enabled, this test will NOT publish events during `given()`, and WILL publish during `when()` because
+it asserts on projections:
+
+```php
+#[Test]
+public function it_updates_student_projection(): void
+{
+    $this->scenario->play(
+        new Play()
+            ->given(new StudentRegisteredEvent('1', 'John'))  // NOT published
+            ->when(function (RepositoryInterface $repo): void {
+                $student = $repo->loadModel(Student::class, Identifier::is('studentId', '1'));
+                $student->changeName('Jane');
+                $repo->storeChanges($student);
+            })  // WILL be published because of UpdatedProjections below
+            ->then(fn (UpdatedProjections $projections) =>
+                $this->assertUpdatedProjectionsContain(StudentProjection::class, $projections)
+            )
+    );
+}
+```
+
+### Manual control per play
+
+You can override the detection behavior for specific plays:
+
+```php
+// Force event publishing during given() phase
+$this->scenario->play(
+    new Play()
+        ->withEventPublishingDuringSetup()  // Events in given() WILL be published
+        ->given(new StudentRegisteredEvent('1', 'John'))
+        ->when(new ChangeNameCommand('1', 'Jane'))
+        ->then(fn (PublishedEvents $events) => ...)
+);
+
+// Prevent event publishing during given() phase
+$this->scenario->play(
+    new Play()
+        ->withoutEventPublishingDuringSetup()  // Events in given() will NOT be published
+        ->given(new StudentRegisteredEvent('1', 'John'))
+        ->when(new ChangeNameCommand('1', 'Jane'))
+        ->then(fn (PublishedEvents $events) => ...)
+);
+```
+
+### Available modes
+
+The `EventPublishingMode` enum provides three modes:
+
+- **ALWAYS** (default): Events are published in both `given()` and `when()` phases, ensuring projections are always
+  updated. Guarantees backwards compatibility.
+- **DETECT**: Automatically determines if projections are needed by analyzing your `then()` assertions. Events in
+  `given()` are not published; events in `when()` are published only if needed.
+- **NEVER**: Events are never published to the event bus. Use this for pure event store testing without any projection
+  updates.
+
+Choose DETECT mode for better test performance when you don't need projections updated during setup, or stick with
+ALWAYS for simpler, more predictable behavior.
 
 ## Using AssertionsTrait
 
@@ -440,24 +554,28 @@ $this->assertUpdatedProjectionsCount(3, $projections);
 
 ## Chaining Play methods
 
-All Play methods return a new instance, allowing fluent chaining:
+All Play methods return a new instance, allowing fluent chaining in the Given-When-Then pattern:
 
 ```php
-$this->scenario->play(
-    new Play()
-        ->withInitialCommands(new DefineCourseCommand('123', 'PHP Basics', 10))
-        ->dispatch(new ChangeCourseCapacityCommand('123', 20))
-        ->testEvents(function (PublishedEvents $events) {
-            $this->assertPublishedEventsCount(1, $events);
-        })
-        ->testProjections(function (UpdatedProjections $projections) {
-            $this->assertUpdatedProjectionsContain(CourseProjection::class, $projections);
-        })
-        ->testThat(function () {
-            $projection = $this->projectionStore->find('123', CourseProjection::class);
-            $this->assertEquals(20, $projection->getCapacity());
-        })
-);
+#[Test]
+public function it_changes_course_capacity_and_updates_projection(): void
+{
+    $this->scenario->play(
+        new Play()
+            ->given(new DefineCourseCommand('123', 'PHP Basics', 10))
+            ->when(new ChangeCourseCapacityCommand('123', 20))
+            ->then(fn (PublishedEvents $events) =>
+                $this->assertPublishedEventsCount(1, $events)
+            )
+            ->then(fn (UpdatedProjections $projections) =>
+                $this->assertUpdatedProjectionsContain(CourseProjection::class, $projections)
+            )
+            ->then(function () {
+                $projection = $this->projectionStore->find('123', CourseProjection::class);
+                $this->assertEquals(20, $projection->getCapacity());
+            })
+    );
+}
 ```
 
 ## Testing models in isolation
@@ -465,10 +583,13 @@ $this->scenario->play(
 You can test models directly without scenarios for unit-level tests:
 
 ```php
-public function test_course_capacity_model_enforces_rules(): void
+use PHPUnit\Framework\Attributes\Test;
+
+#[Test]
+public function it_enforces_course_capacity_rules(): void
 {
     $model = new CourseCapacityModel();
-    
+
     // Apply initial state
     $initialEvents = new RecordedEventStream(
         RecordedEvent::create(
@@ -478,33 +599,36 @@ public function test_course_capacity_model_enforces_rules(): void
         )
     );
     $model->applyEvents($initialEvents);
-    
+
     // Execute business logic
     $model->change(20);
-    
+
     // Assert recorded events
     $changes = $model->getChanges();
     $this->assertCount(1, $changes);
-    
+
     $recordedEvent = iterator_to_array($changes)[0];
     $this->assertInstanceOf(CourseCapacityChangedEvent::class, $recordedEvent->getEvent());
 }
 ```
 
 This approach tests model logic in isolation without involving the command dispatcher, event bus, or projections. Use
-`applyEvents()` with a `RecordedEventStream` to set up the model's initial state, just like `withInitialEvents()` in
+`applyEvents()` with a `RecordedEventStream` to set up the model's initial state, just like `given()` with events in
 scenarios.
 
 ## Best practices
 
-**Set up state with withInitialCommands().** Use `withInitialCommands()` to establish initial state rather than
-manipulating stores directly; this ensures events are published and projections are updated correctly.
+**Use the Given-When-Then pattern.** Structure your tests with `given()` for setup, `when()` for actions, and `then()`
+for assertions. This makes tests readable and self-documenting.
+
+**Set up state with given().** Use `given()` to establish initial state with both events and commands. This ensures a
+clean separation between setup and the actual test action.
 
 **Keep scenarios focused.** Each test should verify one behavior; avoid testing multiple unrelated behaviors in a single
-scenario.
+scenario. Name tests with `it_` prefix describing the expected behavior (e.g., `it_publishes_event_when_registering_student`).
 
 **Test both success and failure.** Write scenarios for both successful operations and business rule violations using
-`expectException()`.
+`thenExpectException()`.
 
 **Leverage AssertionsTrait.** Use the provided assertions (`assertPublishedEventsContain()`,
 `assertUpdatedProjectionsContain()`) rather than writing custom assertion logic.
@@ -512,7 +636,16 @@ scenario.
 **Chain multiple plays for workflows.** When testing multi-step processes, create separate plays for each step and
 execute them together via `scenario->play($play1, $play2)`.
 
-**Use @doesNotPerformAssertions for exception tests.** When using `expectException()` without additional assertions, add
-the `@doesNotPerformAssertions` PHPUnit annotation to avoid warnings.
+**Use #[DoesNotPerformAssertions] for exception tests.** When using `thenExpectException()` without additional
+assertions, add the `#[DoesNotPerformAssertions]` PHPUnit attribute to avoid warnings about tests without assertions.
+
+**Use #[Test] attribute.** Prefer the modern `#[Test]` attribute over the `test_` prefix or `@test` docblock annotation
+for marking test methods.
+
+**Optimize with DETECT mode.** For better test performance, enable `EventPublishingMode::DETECT` at the scenario level
+to avoid unnecessary projection updates during setup. Only use ALWAYS mode when you need projections updated during `given()`.
+
+**Type-hint then() parameters.** Always type-hint the parameter in `then()` callbacks to enable automatic routing:
+`then(fn (PublishedEvents $events) => ...)` instead of `then(fn ($events) => ...)`.
 
 ---

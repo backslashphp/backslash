@@ -20,11 +20,7 @@ Create a `phpunit.xml` configuration file in your project root:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
-         colors="true"
-         verbose="true">
+<phpunit bootstrap="vendor/autoload.php">
     <testsuites>
         <testsuite name="Application Tests">
             <directory>tests</directory>
