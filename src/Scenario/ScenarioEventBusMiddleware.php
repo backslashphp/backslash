@@ -14,7 +14,7 @@ final class ScenarioEventBusMiddleware implements MiddlewareInterface
 
     private bool $tracing = false;
 
-    private bool $blocking = false;
+    private bool $publishing = true;
 
     public function __construct()
     {
@@ -23,17 +23,12 @@ final class ScenarioEventBusMiddleware implements MiddlewareInterface
 
     public function publish(RecordedEventStream $stream, EventStreamPublisherInterface $next): void
     {
-        // Always trace, even when blocking
+        if ($this->publishing) {
+            $next->publish($stream);
+        }
         if ($this->tracing) {
             $this->trace = $this->trace->withRecordedEvents(...$stream->getRecordedEvents());
         }
-
-        // Block publishing to handlers if needed
-        if ($this->blocking) {
-            return;
-        }
-
-        $next->publish($stream);
     }
 
     public function startTracing(): void
@@ -67,11 +62,11 @@ final class ScenarioEventBusMiddleware implements MiddlewareInterface
 
     public function blockPublishing(): void
     {
-        $this->blocking = true;
+        $this->publishing = false;
     }
 
     public function unblockPublishing(): void
     {
-        $this->blocking = false;
+        $this->publishing = true;
     }
 }

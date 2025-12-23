@@ -20,16 +20,16 @@ use ReflectionNamedType;
 final class Play
 {
     /** @var RecordedEventStream|callable|null */
-    private mixed $initialEvents = null;
+    private mixed $givenEvents = null;
 
     /** @var array<object|callable> */
-    private array $initialCommands = [];
+    private array $givenCommands = [];
 
     /** @var array<object|callable> */
-    private array $commands = [];
+    private array $whenCommands = [];
 
     /** @var callable[] */
-    private array $actions = [];
+    private array $whenActions = [];
 
     /** @var callable[] */
     private array $eventsAssertions = [];
@@ -43,9 +43,9 @@ final class Play
     /** @var callable[] */
     private array $thenAssertions = [];
 
-    private ?string $expectedException = null;
+    private ?string $thenExpectedException = null;
 
-    private ?string $expectedExceptionMessage = null;
+    private ?string $thenExpectedExceptionMessage = null;
 
     private ?bool $projectionsEnabled = null;
 
@@ -58,7 +58,7 @@ final class Play
 
         // If single argument and it's a RecordedEventStream or callable, use it directly
         if (count($events) === 1 && ($events[0] instanceof RecordedEventStream || is_callable($events[0]))) {
-            $clone->initialEvents = $events[0];
+            $clone->givenEvents = $events[0];
             return $clone;
         }
 
@@ -68,7 +68,7 @@ final class Play
             $events,
         );
 
-        $clone->initialEvents = new RecordedEventStream(...$recordedEvents);
+        $clone->givenEvents = new RecordedEventStream(...$recordedEvents);
         return $clone;
     }
 
@@ -79,7 +79,7 @@ final class Play
     {
         $clone = clone $this;
         foreach ($commands as $command) {
-            $clone->initialCommands[] = $command;
+            $clone->givenCommands[] = $command;
         }
         return $clone;
     }
@@ -90,7 +90,7 @@ final class Play
     public function doAction(callable $action): self
     {
         $clone = clone $this;
-        $clone->actions[] = $action;
+        $clone->whenActions[] = $action;
         return $clone;
     }
 
@@ -101,7 +101,7 @@ final class Play
     {
         $clone = clone $this;
         foreach ($commands as $command) {
-            $clone->commands[] = $command;
+            $clone->whenCommands[] = $command;
         }
         return $clone;
     }
@@ -142,7 +142,7 @@ final class Play
     public function expectException(string $exceptionClass): self
     {
         $clone = clone $this;
-        $clone->expectedException = $exceptionClass;
+        $clone->thenExpectedException = $exceptionClass;
         return $clone;
     }
 
@@ -152,7 +152,7 @@ final class Play
     public function expectExceptionMessage(string $message): self
     {
         $clone = clone $this;
-        $clone->expectedExceptionMessage = $message;
+        $clone->thenExpectedExceptionMessage = $message;
         return $clone;
     }
 
@@ -203,9 +203,9 @@ final class Play
         $clone = clone $this;
         foreach ($items as $item) {
             if (is_callable($item)) {
-                $clone->actions[] = $item;
+                $clone->whenActions[] = $item;
             } else {
-                $clone->commands[] = $item;
+                $clone->whenCommands[] = $item;
             }
         }
         return $clone;
@@ -251,11 +251,11 @@ final class Play
             $eventBusMiddleware->blockPublishing();
         }
 
-        if ($this->initialEvents) {
-            $eventStore->append($this->evaluate($this->initialEvents), null, null);
-            $eventBus->publish($this->evaluate($this->initialEvents));
+        if ($this->givenEvents) {
+            $eventStore->append($this->evaluate($this->givenEvents), null, null);
+            $eventBus->publish($this->evaluate($this->givenEvents));
         }
-        foreach ($this->initialCommands as $command) {
+        foreach ($this->givenCommands as $command) {
             $dispatcher->dispatch($this->evaluate($command));
         }
 
@@ -269,16 +269,16 @@ final class Play
         }
 
         /* Commands and actions */
-        foreach ($this->commands as $command) {
+        foreach ($this->whenCommands as $command) {
             try {
                 $dispatcher->dispatch($this->evaluate($command));
             } catch (Exception $e) {
                 $catched = false;
-                if ($this->expectedException && ($e instanceof $this->expectedException)) {
+                if ($this->thenExpectedException && ($e instanceof $this->thenExpectedException)) {
                     $expectedExceptionClassThrown = true;
                     $catched = true;
                 }
-                if ($e->getMessage() === $this->expectedExceptionMessage) {
+                if ($e->getMessage() === $this->thenExpectedExceptionMessage) {
                     $expectedExceptionMessageThrown = true;
                     $catched = true;
                 }
@@ -287,16 +287,16 @@ final class Play
                 }
             }
         }
-        foreach ($this->actions as $action) {
+        foreach ($this->whenActions as $action) {
             try {
                 $this->invokeAction($action, $repository, $dispatcher);
             } catch (Exception $e) {
                 $catched = false;
-                if ($this->expectedException && ($e instanceof $this->expectedException)) {
+                if ($this->thenExpectedException && ($e instanceof $this->thenExpectedException)) {
                     $expectedExceptionClassThrown = true;
                     $catched = true;
                 }
-                if ($e->getMessage() === $this->expectedExceptionMessage) {
+                if ($e->getMessage() === $this->thenExpectedExceptionMessage) {
                     $expectedExceptionMessageThrown = true;
                     $catched = true;
                 }
@@ -307,14 +307,14 @@ final class Play
         }
 
         /* Assert expected exception was thrown */
-        if ($this->expectedException && !$expectedExceptionClassThrown) {
+        if ($this->thenExpectedException && !$expectedExceptionClassThrown) {
             throw new ExpectedExceptionWasNotThrownException(
-                sprintf('Exception %s was expected to be thrown.', $this->expectedException),
+                sprintf('Exception %s was expected to be thrown.', $this->thenExpectedException),
             );
         }
-        if ($this->expectedExceptionMessage && !$expectedExceptionMessageThrown) {
+        if ($this->thenExpectedExceptionMessage && !$expectedExceptionMessageThrown) {
             throw new ExpectedExceptionMessageWasNotThrownException(
-                sprintf('An exception with message "%s" was expected to be thrown.', $this->expectedExceptionMessage),
+                sprintf('An exception with message "%s" was expected to be thrown.', $this->thenExpectedExceptionMessage),
             );
         }
 
