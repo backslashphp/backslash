@@ -129,8 +129,9 @@ EventBus.publish() → EventHandlers (Projectors)
 **`Scenario/`** - BDD-style testing component
 - `Scenario.php` - Test orchestrator with in-memory event store
 - `Play.php` - Individual test scenario definition
+- `EventPublishingMode.php` - Enum for controlling event publication behavior
 - `AssertionsTrait.php` - Assertion helpers
-- `ScenarioEventBusMiddleware.php` - Traces published events and blocks publishing during test setup
+- `ScenarioEventBusMiddleware.php` - Traces published events and controls publishing based on mode
 - `ScenarioProjectionStoreMiddleware.php` - Traces projection updates
 - `PublishedEvents.php` - Event assertion helper
 - `UpdatedProjections.php` - Projection assertion helper
@@ -547,8 +548,36 @@ $scenario->play(
 - `given()` - accepts events or commands for setup
 - `when()` - accepts commands or closures with `RepositoryInterface`
 - `then()` - automatic parameter routing based on type hints
-- Automatic projection detection - projections only updated when needed
-- `withProjections()` / `withoutProjections()` - explicit control
+
+**Event Publishing Modes:**
+
+By default, events generated in `given()` and `when()` are published to the event bus (`EventPublishingMode::ALWAYS`), ensuring backwards compatibility. This means projections are always updated during test setup and execution.
+
+For more efficient testing, you can enable automatic projection detection using `EventPublishingMode::DETECT`:
+
+```php
+// Apply to all tests in a test case
+class StudentTest extends TestCase
+{
+    private Scenario $scenario;
+
+    protected function setUp(): void
+    {
+        $this->scenario = new Scenario();
+        $this->scenario->setEventPublishingMode(EventPublishingMode::DETECT);
+    }
+}
+
+// Or apply to a specific test
+$scenario = new Scenario();
+$scenario->setEventPublishingMode(EventPublishingMode::DETECT);
+$scenario->play(new Play()->given(...)->when(...)->then(...));
+```
+
+With `EventPublishingMode::DETECT`, the scenario automatically analyzes your test to determine if projections are needed:
+- Events in `given()` are NOT published (test setup only)
+- Events in `when()` ARE published only if assertions reference projections
+- More efficient as projections are only updated when actually needed for assertions
 
 ## Key Features
 
@@ -686,5 +715,5 @@ Create `Repository`, `Dispatcher`, `EventBus`, `ProjectionStore` in application 
 
 ---
 
-**Last updated**: 2025-12-19
-**Version analyzed**: branch 2.x (commit b9d34e2)
+**Last updated**: 2025-12-23
+**Version analyzed**: branch 2.x-scenario
