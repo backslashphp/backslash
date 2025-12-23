@@ -87,8 +87,18 @@ final class Scenario
         }
     }
 
-    public function setEventPublishingMode(EventPublishingMode $mode): void
+    public function detectIfProjectionsAreNeeded(): void
     {
-        $this->eventPublishingMode = $mode;
+        $this->eventPublishingMode = EventPublishingMode::DETECT;
+    }
+
+    public function enableProjections(): void
+    {
+        $this->eventPublishingMode = EventPublishingMode::ALWAYS;
+    }
+
+    public function disableProjections(): void
+    {
+        $this->eventPublishingMode = EventPublishingMode::NEVER;
     }
 }
