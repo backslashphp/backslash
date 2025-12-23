@@ -100,7 +100,7 @@ class PlayTest extends TestCase
 
         $scenario->play(
             new Play()
-                ->withProjections()  // Force projections ON to publish to handlers
+                ->withEventPublishingDuringSetup()  // Force projections ON to publish to handlers
                 ->doAction(function () use ($eventBus): void {
                     $eventBus->publish(
                         new RecordedEventStream(

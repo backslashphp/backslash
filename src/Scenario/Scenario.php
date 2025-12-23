@@ -39,6 +39,8 @@ final class Scenario
 
     private ProjectionStore $projectionStore;
 
+    private EventPublishingMode $eventPublishingMode = EventPublishingMode::ALWAYS;
+
     public function __construct(
         ?EventBus $eventBus = null,
         ?DispatcherInterface $dispatcher = null,
@@ -69,6 +71,11 @@ final class Scenario
     public function play(Play ...$plays): void
     {
         foreach ($plays as $play) {
+            if ($this->eventPublishingMode === EventPublishingMode::ALWAYS) {
+                $play = $play->withProjections();
+            } elseif ($this->eventPublishingMode === EventPublishingMode::NEVER) {
+                $play = $play->withoutProjections();
+            }
             $play->run(
                 $this->eventBus,
                 $this->eventBusMiddleware,
@@ -78,5 +85,10 @@ final class Scenario
                 $this->repository,
             );
         }
+    }
+
+    public function setEventPublishingMode(EventPublishingMode $mode): void
+    {
+        $this->eventPublishingMode = $mode;
     }
 }

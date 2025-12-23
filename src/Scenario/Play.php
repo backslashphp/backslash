@@ -47,7 +47,7 @@ final class Play
 
     private ?string $thenExpectedExceptionMessage = null;
 
-    private ?bool $projectionsEnabled = null;
+    private EventPublishingMode $eventPublishingMode = EventPublishingMode::DETECT;
 
     /**
      * @deprecated Use given() instead. Will be removed in Backslash 3.x
@@ -159,14 +159,14 @@ final class Play
     public function withProjections(): self
     {
         $clone = clone $this;
-        $clone->projectionsEnabled = true;
+        $clone->eventPublishingMode = EventPublishingMode::ALWAYS;
         return $clone;
     }
 
     public function withoutProjections(): self
     {
         $clone = clone $this;
-        $clone->projectionsEnabled = false;
+        $clone->eventPublishingMode = EventPublishingMode::NEVER;
         return $clone;
     }
 
@@ -351,8 +351,8 @@ final class Play
     private function needsProjections(): bool
     {
         // Explicit override
-        if ($this->projectionsEnabled !== null) {
-            return $this->projectionsEnabled;
+        if ($this->eventPublishingMode !== EventPublishingMode::DETECT) {
+            return $this->eventPublishingMode === EventPublishingMode::ALWAYS;
         }
 
         // Auto-detect from then() assertions

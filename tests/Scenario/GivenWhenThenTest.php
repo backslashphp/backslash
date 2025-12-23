@@ -171,7 +171,7 @@ class GivenWhenThenTest extends TestCase
 
         $scenario->play(
             new Play()
-                ->withProjections()  // Force projections ON
+                ->withEventPublishingDuringSetup()  // Force projections ON
                 ->given(new StudentRegisteredEvent('1', 'John'))
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
@@ -214,7 +214,7 @@ class GivenWhenThenTest extends TestCase
 
         $scenario->play(
             new Play()
-                ->withoutProjections()  // Force projections OFF
+                ->withoutEventPublishingDuringSetup()  // Force projections OFF
                 ->given(new StudentRegisteredEvent('1', 'John'))
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
@@ -289,7 +289,7 @@ class GivenWhenThenTest extends TestCase
                     $this->assertCount(0, $events->getAll()),
                 ),
             new Play()
-                ->withProjections()  // Force projections ON
+                ->withEventPublishingDuringSetup()  // Force projections ON
                 ->given(new StudentRegisteredEvent('2', 'Jane'))
                 ->then(
                     fn (PublishedEvents $events) =>
