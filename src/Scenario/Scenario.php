@@ -71,11 +71,6 @@ final class Scenario
     public function play(Play ...$plays): void
     {
         foreach ($plays as $play) {
-            if ($this->eventPublishingMode === EventPublishingMode::ALWAYS) {
-                $play = $play->withProjections();
-            } elseif ($this->eventPublishingMode === EventPublishingMode::NEVER) {
-                $play = $play->withoutProjections();
-            }
             $play->run(
                 $this->eventBus,
                 $this->eventBusMiddleware,
@@ -83,22 +78,14 @@ final class Scenario
                 $this->dispatcher,
                 $this->projectionStoreMiddleware,
                 $this->repository,
+                $this->eventPublishingMode,
             );
         }
     }
 
-    public function detectIfProjectionsAreNeeded(): void
+    public function setEventPublishingMode(EventPublishingMode $mode): self
     {
-        $this->eventPublishingMode = EventPublishingMode::DETECT;
-    }
-
-    public function enableProjections(): void
-    {
-        $this->eventPublishingMode = EventPublishingMode::ALWAYS;
-    }
-
-    public function disableProjections(): void
-    {
-        $this->eventPublishingMode = EventPublishingMode::NEVER;
+        $this->eventPublishingMode = $mode;
+        return $this;
     }
 }

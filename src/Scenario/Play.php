@@ -47,8 +47,6 @@ final class Play
 
     private ?string $thenExpectedExceptionMessage = null;
 
-    private EventPublishingMode $eventPublishingMode = EventPublishingMode::DETECT;
-
     /**
      * @deprecated Use given() instead. Will be removed in Backslash 3.x
      */
@@ -156,20 +154,6 @@ final class Play
         return $clone;
     }
 
-    public function withProjections(): self
-    {
-        $clone = clone $this;
-        $clone->eventPublishingMode = EventPublishingMode::ALWAYS;
-        return $clone;
-    }
-
-    public function withoutProjections(): self
-    {
-        $clone = clone $this;
-        $clone->eventPublishingMode = EventPublishingMode::NEVER;
-        return $clone;
-    }
-
     public function given(object|callable ...$items): self
     {
         if (empty($items)) {
@@ -235,12 +219,15 @@ final class Play
         DispatcherInterface $dispatcher,
         ScenarioProjectionStoreMiddleware $projectionMiddleware,
         RepositoryInterface $repository,
+        EventPublishingMode $eventPublishingMode,
     ): void {
         $expectedExceptionClassThrown = false;
         $expectedExceptionMessageThrown = false;
 
         // Detect if projections are needed
-        $needsProjections = $this->needsProjections();
+        $needsProjections = $eventPublishingMode === EventPublishingMode::DETECT
+            ? $this->needsProjections()
+            : $eventPublishingMode === EventPublishingMode::ALWAYS;
 
         // GIVEN - Setup phase
         $eventBusMiddleware->stopTracing();
@@ -319,9 +306,9 @@ final class Play
         }
 
         /* THEN - Assertions */
-        $publishedStreams = $eventBusMiddleware->getTracedEvents();
+        $publishedStream = $eventBusMiddleware->getTracedEvents();
         $eventBusMiddleware->clearTrace();
-        $publishedEvents = new PublishedEvents($publishedStreams);
+        $publishedEvents = new PublishedEvents($publishedStream);
 
         $updatedProjections = new UpdatedProjections($projectionMiddleware->getTracedProjections());
         $projectionMiddleware->clearTrace();
@@ -350,11 +337,6 @@ final class Play
 
     private function needsProjections(): bool
     {
-        // Explicit override
-        if ($this->eventPublishingMode !== EventPublishingMode::DETECT) {
-            return $this->eventPublishingMode === EventPublishingMode::ALWAYS;
-        }
-
         // Auto-detect from then() assertions
         foreach ($this->thenAssertions as $assertion) {
             $reflection = new ReflectionFunction($assertion);
@@ -377,9 +359,9 @@ final class Play
     }
 
     private function invokeAssertion(
-        callable            $assertion,
-        PublishedEvents     $events,
-        UpdatedProjections  $projections,
+        callable $assertion,
+        PublishedEvents $events,
+        UpdatedProjections $projections,
         RepositoryInterface $repository,
     ): void {
         $reflection = new ReflectionFunction($assertion);
