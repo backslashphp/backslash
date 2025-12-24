@@ -50,6 +50,9 @@ class PlayTest extends TestCase
             eventStore: new EventStore(InMemorySqlitePdoEventStoreFactory::build()),
         );
 
+        // Use DETECT mode so events in given() are not published
+        $scenario->setEventPublishingMode(EventPublishingMode::DETECT);
+
         $scenario->play(
             new Play()
                 ->withInitialEvents(
@@ -58,7 +61,7 @@ class PlayTest extends TestCase
                 ),
         );
 
-        // Events should NOT be published during setup
+        // Events should NOT be published during setup (given phase)
         $this->assertEquals(0, $handlerCallCount, 'Events should not be published during withInitialEvents setup');
     }
 
@@ -98,9 +101,11 @@ class PlayTest extends TestCase
             eventStore: $eventStore,
         );
 
+        // Force projections ON to publish to handlers
+        $scenario->setEventPublishingMode(EventPublishingMode::ALWAYS);
+
         $scenario->play(
             new Play()
-                ->withEventPublishingDuringSetup()  // Force projections ON to publish to handlers
                 ->doAction(function () use ($eventBus): void {
                     $eventBus->publish(
                         new RecordedEventStream(

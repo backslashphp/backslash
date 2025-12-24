@@ -469,29 +469,41 @@ public function it_updates_student_projection(): void
 }
 ```
 
-### Manual control per play
+### Changing modes for specific tests
 
-You can override the detection behavior for specific plays:
+You can change the publishing mode at any time by calling `setEventPublishingMode()` on the scenario:
 
 ```php
-// Force event publishing during given() phase
-$this->scenario->play(
-    new Play()
-        ->withEventPublishingDuringSetup()  // Events in given() WILL be published
-        ->given(new StudentRegisteredEvent('1', 'John'))
-        ->when(new ChangeNameCommand('1', 'Jane'))
-        ->then(fn (PublishedEvents $events) => ...)
-);
+#[Test]
+public function it_always_publishes_events(): void
+{
+    // Force event publishing for this specific test
+    $this->scenario->setEventPublishingMode(EventPublishingMode::ALWAYS);
 
-// Prevent event publishing during given() phase
-$this->scenario->play(
-    new Play()
-        ->withoutEventPublishingDuringSetup()  // Events in given() will NOT be published
-        ->given(new StudentRegisteredEvent('1', 'John'))
-        ->when(new ChangeNameCommand('1', 'Jane'))
-        ->then(fn (PublishedEvents $events) => ...)
-);
+    $this->scenario->play(
+        new Play()
+            ->given(new StudentRegisteredEvent('1', 'John'))
+            ->when(new ChangeNameCommand('1', 'Jane'))
+            ->then(fn (PublishedEvents $events) => ...)
+    );
+}
+
+#[Test]
+public function it_never_publishes_events(): void
+{
+    // Prevent all event publishing for this test
+    $this->scenario->setEventPublishingMode(EventPublishingMode::NEVER);
+
+    $this->scenario->play(
+        new Play()
+            ->given(new StudentRegisteredEvent('1', 'John'))
+            ->when(new ChangeNameCommand('1', 'Jane'))
+            ->then(fn (PublishedEvents $events) => ...)
+    );
+}
 ```
+
+Note that the mode applies to all plays executed after it's set, until you change it again.
 
 ### Available modes
 
