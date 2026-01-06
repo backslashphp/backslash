@@ -129,9 +129,10 @@ EventBus.publish() → EventHandlers (Projectors)
 **`Scenario/`** - BDD-style testing component
 - `Scenario.php` - Test orchestrator with in-memory event store
 - `Play.php` - Individual test scenario definition
+- `EventPublishingMode.php` - Enum for controlling event publication behavior
 - `AssertionsTrait.php` - Assertion helpers
-- `EventBusTraceMiddleware.php` - Traces published events
-- `ProjectionStoreTraceMiddleware.php` - Traces projection updates
+- `ScenarioEventBusMiddleware.php` - Traces published events and controls publishing based on mode
+- `ScenarioProjectionStoreMiddleware.php` - Traces projection updates
 - `PublishedEvents.php` - Event assertion helper
 - `UpdatedProjections.php` - Projection assertion helper
 - `Constraint/` - PHPUnit constraints for assertions
@@ -509,29 +510,74 @@ try {
 
 ## Testing with Scenario
 
-Backslash provides a BDD-style testing component:
+Backslash provides a BDD-style testing component with Given-When-Then syntax:
 
 ```php
 $scenario = new Scenario();
 
 $scenario->play(
     new Play()
-        ->withInitialCommands(
-            new RegisterStudentCommand('123', 'Alice')
+        // GIVEN - Setup initial state
+        ->given(
+            new StudentRegisteredEvent('123', 'Alice')
         )
-        ->dispatch(new EnrollInCourseCommand('123', 'MATH101'))
-        ->testEvents(function (PublishedEvents $events) {
-            $events->assertContains(StudentEnrolledInCourse::class);
+        // WHEN - Execute action
+        ->when(
+            new EnrollInCourseCommand('123', 'MATH101')
+        )
+        // Or use a closure for direct model manipulation
+        ->when(function (RepositoryInterface $repo): void {
+            $student = $repo->loadModel(Student::class, Identifier::is('studentId', '123'));
+            $student->enrollInCourse('MATH101');
+            $repo->storeChanges($student);
         })
-        ->testProjections(function (UpdatedProjections $projections) {
-            $projections->assertUpdated('123', StudentProjection::class);
-        })
-        ->testThat(function (ProjectionStore $store) {
-            $student = $store->find('123', StudentProjection::class);
-            assert(in_array('MATH101', $student->getCourses()));
-        })
+        // THEN - Assert results
+        ->then(fn(PublishedEvents $events) =>
+            $this->assertNotEmpty($events->getAllOf(StudentEnrolledInCourse::class))
+        )
+        ->then(fn(UpdatedProjections $projections) =>
+            $projections->assertUpdated('123', StudentProjection::class)
+        )
+        ->then(fn(RepositoryInterface $repo) =>
+            $this->assertCount(1, $repo->loadModel(Student::class, ...)->getCourses())
+        )
 );
 ```
+
+**Key features:**
+- `given()` - accepts events or commands for setup
+- `when()` - accepts commands or closures with `RepositoryInterface`
+- `then()` - automatic parameter routing based on type hints
+
+**Event Publishing Modes:**
+
+By default, events generated in `given()` and `when()` are published to the event bus (`EventPublishingMode::ALWAYS`), ensuring backwards compatibility. This means projections are always updated during test setup and execution.
+
+For more efficient testing, you can enable automatic projection detection using `EventPublishingMode::DETECT`:
+
+```php
+// Apply to all tests in a test case
+class StudentTest extends TestCase
+{
+    private Scenario $scenario;
+
+    protected function setUp(): void
+    {
+        $this->scenario = new Scenario();
+        $this->scenario->setEventPublishingMode(EventPublishingMode::DETECT);
+    }
+}
+
+// Or apply to a specific test
+$scenario = new Scenario();
+$scenario->setEventPublishingMode(EventPublishingMode::DETECT);
+$scenario->play(new Play()->given(...)->when(...)->then(...));
+```
+
+With `EventPublishingMode::DETECT`, the scenario automatically analyzes your test to determine if projections are needed:
+- Events in `given()` are NOT published (test setup only)
+- Events in `when()` ARE published only if assertions reference projections
+- More efficient as projections are only updated when actually needed for assertions
 
 ## Key Features
 
@@ -669,5 +715,5 @@ Create `Repository`, `Dispatcher`, `EventBus`, `ProjectionStore` in application 
 
 ---
 
-**Last updated**: 2025-12-19
-**Version analyzed**: branch 2.x (commit b9d34e2)
+**Last updated**: 2025-12-23
+**Version analyzed**: branch 2.x-scenario

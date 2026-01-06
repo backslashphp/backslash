@@ -18,6 +18,8 @@ use Backslash\PdoEventStore\JsonMetadataSerializer;
 use Backslash\PdoEventStore\PdoEventStoreAdapter;
 use Backslash\ProjectionStore\InMemoryProjectionStoreAdapter;
 use Backslash\ProjectionStore\ProjectionStore;
+use Backslash\Repository\Repository;
+use Backslash\Repository\RepositoryInterface;
 use PDO;
 use Ramsey\Uuid\Uuid;
 
@@ -29,15 +31,22 @@ final class Scenario
 
     private EventStoreInterface $eventStore;
 
-    private EventBusTraceMiddleware $eventBusTrace;
+    private RepositoryInterface $repository;
 
-    private ProjectionStoreTraceMiddleware $projectionStoreTrace;
+    private ScenarioEventBusMiddleware $eventBusMiddleware;
+
+    private ScenarioProjectionStoreMiddleware $projectionStoreMiddleware;
+
+    private ProjectionStore $projectionStore;
+
+    private EventPublishingMode $eventPublishingMode = EventPublishingMode::ALWAYS;
 
     public function __construct(
         ?EventBus $eventBus = null,
         ?DispatcherInterface $dispatcher = null,
         ?ProjectionStore $projectionStore = null,
         ?EventStoreInterface $eventStore = null,
+        ?RepositoryInterface $repository = null,
     ) {
         $this->eventBus = $eventBus ?? new EventBus();
         $this->dispatcher = $dispatcher ?? new Dispatcher();
@@ -51,12 +60,12 @@ final class Scenario
             new JsonMetadataSerializer(),
             fn () => Uuid::uuid4()->toString(),
         ));
-        $this->eventBusTrace = new EventBusTraceMiddleware();
-        $this->eventBus->addMiddleware($this->eventBusTrace);
-        $this->projectionStoreTrace = new ProjectionStoreTraceMiddleware();
-        ($projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter()))->addMiddleware(
-            $this->projectionStoreTrace,
-        );
+        $this->eventBusMiddleware = new ScenarioEventBusMiddleware();
+        $this->eventBus->addMiddleware($this->eventBusMiddleware);
+        $this->projectionStoreMiddleware = new ScenarioProjectionStoreMiddleware();
+        $this->projectionStore = $projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter());
+        $this->projectionStore->addMiddleware($this->projectionStoreMiddleware);
+        $this->repository = $repository ?? new Repository($this->eventStore, $this->eventBus);
     }
 
     public function play(Play ...$plays): void
@@ -64,11 +73,19 @@ final class Scenario
         foreach ($plays as $play) {
             $play->run(
                 $this->eventBus,
-                $this->eventBusTrace,
+                $this->eventBusMiddleware,
                 $this->eventStore,
                 $this->dispatcher,
-                $this->projectionStoreTrace,
+                $this->projectionStoreMiddleware,
+                $this->repository,
+                $this->eventPublishingMode,
             );
         }
+    }
+
+    public function setEventPublishingMode(EventPublishingMode $mode): self
+    {
+        $this->eventPublishingMode = $mode;
+        return $this;
     }
 }

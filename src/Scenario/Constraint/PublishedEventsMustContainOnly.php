@@ -8,7 +8,7 @@ use Backslash\Scenario\PublishedEvents;
 use PHPUnit\Framework\Constraint\Constraint;
 use ReflectionClass;
 
-final class StreamMustContainOnly extends Constraint
+final class PublishedEventsMustContainOnly extends Constraint
 {
     private string $eventFqcn;
 

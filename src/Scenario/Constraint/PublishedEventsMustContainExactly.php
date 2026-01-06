@@ -8,7 +8,7 @@ use Backslash\Scenario\PublishedEvents;
 use PHPUnit\Framework\Constraint\Constraint;
 use ReflectionClass;
 
-final class StreamMustContainExactly extends Constraint
+final class PublishedEventsMustContainExactly extends Constraint
 {
     private int $count;
 

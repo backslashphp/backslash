@@ -18,11 +18,12 @@ use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
 use Backslash\Shared\StreamEnricher\TestEnricher;
 use Backslash\StreamEnricher\StreamEnricherEventStoreMiddleware;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class StreamEnricherEventStoreMiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_enriches_stream(): void
     {
         $mw = new class () implements MiddlewareInterface {

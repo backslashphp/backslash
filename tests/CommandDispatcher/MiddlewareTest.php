@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Backslash\CommandDispatcher;
 
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class MiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_executes_middlewares_in_lifo_order(): void
     {
         $output = [];

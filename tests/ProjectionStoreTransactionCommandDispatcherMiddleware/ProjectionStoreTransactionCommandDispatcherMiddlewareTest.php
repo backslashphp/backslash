@@ -7,11 +7,12 @@ namespace Backslash\ProjectionStoreTransactionCommandDispatcherMiddleware;
 use Backslash\CommandDispatcher\Dispatcher;
 use Backslash\Shared\CommandDispatcher\CallableTestHandler;
 use Backslash\Shared\CommandDispatcher\ConfigurableTestCommand;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class ProjectionStoreTransactionCommandDispatcherMiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_commits_projection_store_on_successful_dispatch(): void
     {
         $adapter = new TestProjectionStore();
@@ -26,7 +27,7 @@ class ProjectionStoreTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertEquals([['commit']], $adapter->getCalls());
     }
 
-    /** @test */
+    #[Test]
     public function it_rolls_back_projection_store_on_exception(): void
     {
         $adapter = new TestProjectionStore();
@@ -52,7 +53,7 @@ class ProjectionStoreTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertEquals([], $adapter->getCalls());
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_nested_command_dispatch(): void
     {
         $adapter = new TestProjectionStore();
@@ -75,7 +76,7 @@ class ProjectionStoreTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertEquals([['commit']], $adapter->getCalls());
     }
 
-    /** @test */
+    #[Test]
     public function it_only_commits_when_nested_level_is_zero(): void
     {
         $adapter = new TestProjectionStore();
@@ -103,7 +104,7 @@ class ProjectionStoreTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertEquals([['commit']], $adapter->getCalls());
     }
 
-    /** @test */
+    #[Test]
     public function it_resets_nested_levels_to_zero_on_exception(): void
     {
         $adapter = new TestProjectionStore();
@@ -149,7 +150,7 @@ class ProjectionStoreTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertEquals([['commit']], $adapter->getCalls());
     }
 
-    /** @test */
+    #[Test]
     public function it_rolls_back_on_exception_in_nested_dispatch(): void
     {
         $adapter = new TestProjectionStore();
@@ -180,7 +181,7 @@ class ProjectionStoreTransactionCommandDispatcherMiddlewareTest extends TestCase
         $this->assertEquals([], $adapter->getCalls());
     }
 
-    /** @test */
+    #[Test]
     public function it_decrements_nested_levels_before_commit(): void
     {
         $adapter = new TestProjectionStore();

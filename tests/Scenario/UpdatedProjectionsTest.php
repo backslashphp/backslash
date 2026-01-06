@@ -6,11 +6,12 @@ namespace Backslash\Scenario;
 
 use Backslash\Shared\Projection\TestBarProjection;
 use Backslash\Shared\Projection\TestFooProjection;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class UpdatedProjectionsTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_counts_projections(): void
     {
         $updatedProjections = new UpdatedProjections($this->getProjections());
@@ -18,7 +19,7 @@ class UpdatedProjectionsTest extends TestCase
         $this->assertCount(2, $updatedProjections);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_projections_of_type(): void
     {
         $updatedProjections = new UpdatedProjections($this->getProjections());
@@ -26,7 +27,7 @@ class UpdatedProjectionsTest extends TestCase
         $this->assertCount(1, $updatedProjections->getAllOf(TestFooProjection::class));
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_all_projections(): void
     {
         $updatedProjections = new UpdatedProjections($this->getProjections());

@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Backslash\CacheProjectionStoreMiddleware;
 
 use Backslash\ProjectionStore\ProjectionStore;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class CacheProjectionStoreMiddlewareTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_caches_projections(): void
     {
         $adapter = new TestProjectionStoreAdapter();

@@ -9,7 +9,7 @@ use Generator;
 
 final class InMemoryProjectionStoreAdapter implements AdapterInterface
 {
-    private array $projections;
+    private array $projections = [];
 
     public function find(string $id, string $class): ProjectionInterface
     {

@@ -8,16 +8,16 @@ use Backslash\Scenario\PublishedEvents;
 use PHPUnit\Framework\Constraint\Constraint;
 use ReflectionClass;
 
-final class StreamMustContain extends Constraint
+final class PublishedEventsMustCount extends Constraint
 {
-    private string $eventFqcn;
+    private int $count;
 
-    public function __construct(string $eventFqcn)
+    public function __construct(int $count)
     {
         if ((new ReflectionClass(Constraint::class))->hasMethod('__construct')) {
             parent::__construct();
         }
-        $this->eventFqcn = $eventFqcn;
+        $this->count = $count;
     }
 
     /**
@@ -25,17 +25,12 @@ final class StreamMustContain extends Constraint
      */
     public function matches($publishedEvents): bool
     {
-        foreach ($publishedEvents->getAll() as $recordedEvent) {
-            if ($recordedEvent->getEvent()::class === $this->eventFqcn) {
-                return true;
-            }
-        }
-        return false;
+        return count($publishedEvents) === $this->count;
     }
 
     public function toString(): string
     {
-        return "must contain instance of {$this->eventFqcn}";
+        return "must count {$this->count} event(s)";
     }
 
     protected function failureDescription($other): string

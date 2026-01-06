@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Backslash\ProjectionStore;
 
 use Backslash\Shared\Projection\TestFooProjection;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class UnitOfWorkTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_tracks_stored_and_removed_projection(): void
     {
         $unit = new UnitOfWork();

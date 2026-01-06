@@ -8,11 +8,13 @@ use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventStreamPublisherInterface;
 use Backslash\EventBus\MiddlewareInterface;
 
-final class EventBusTraceMiddleware implements MiddlewareInterface
+final class ScenarioEventBusMiddleware implements MiddlewareInterface
 {
     private RecordedEventStream $trace;
 
     private bool $tracing = false;
+
+    private bool $publishing = true;
 
     public function __construct()
     {
@@ -21,7 +23,9 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
 
     public function publish(RecordedEventStream $stream, EventStreamPublisherInterface $next): void
     {
-        $next->publish($stream);
+        if ($this->publishing) {
+            $next->publish($stream);
+        }
         if ($this->tracing) {
             $this->trace = $this->trace->withRecordedEvents(...$stream->getRecordedEvents());
         }
@@ -54,5 +58,15 @@ final class EventBusTraceMiddleware implements MiddlewareInterface
     public function getTracedEvents(): RecordedEventStream
     {
         return $this->trace;
+    }
+
+    public function blockPublishing(): void
+    {
+        $this->publishing = false;
+    }
+
+    public function unblockPublishing(): void
+    {
+        $this->publishing = true;
     }
 }

@@ -8,11 +8,12 @@ use Backslash\Pdo\PdoProxy;
 use PDO;
 use PDOException;
 use PDOStatement;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class PdoProxyTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function it_does_not_connect_on_instantiation(): void
     {
         new PdoProxy(
@@ -21,7 +22,7 @@ class PdoProxyTest extends TestCase
         $this->assertTrue(true);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_exception_if_connection_error_on_first_use(): void
     {
         $this->expectException(PDOException::class);
@@ -31,7 +32,7 @@ class PdoProxyTest extends TestCase
         $pdo->rollback();
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_real_pdo(): void
     {
         $pdo = new PdoProxy(
@@ -40,7 +41,7 @@ class PdoProxyTest extends TestCase
         $this->assertInstanceOf(PDO::class, $pdo->getPdo());
     }
 
-    /** @test */
+    #[Test]
     public function it_forwards_call_to_proxied_pdo(): void
     {
         $pdo = new PdoProxy(

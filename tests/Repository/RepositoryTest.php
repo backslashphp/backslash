@@ -17,6 +17,7 @@ use Backslash\PdoEventStore\PdoEventStoreAdapter;
 use Backslash\Shared\Model\StudentNameChangeModel;
 use Backslash\Shared\Model\StudentRegistrationModel;
 use PDO;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 
@@ -48,7 +49,7 @@ class RepositoryTest extends TestCase
         $this->repository = new Repository(new EventStore($adapter), $eventBus);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_stores_and_loads_model(): void
     {
         $studentId = Uuid::uuid4()->toString();
@@ -72,7 +73,7 @@ class RepositoryTest extends TestCase
         $this->assertTrue($this->testEventBusMiddleware->wasCalled());
     }
 
-    /** @test */
+    #[Test]
     public function it_executes_middlewares_in_lifo_order(): void
     {
         $output = [];

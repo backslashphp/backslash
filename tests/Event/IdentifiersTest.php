@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Backslash\Event;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 class IdentifiersTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function key_and_value_must_have_valid_type(): void
     {
         $fixtures = [
