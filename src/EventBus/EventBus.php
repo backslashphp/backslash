@@ -47,6 +47,11 @@ final class EventBus implements EventBusInterface
         $this->publisher->subscribe($eventClass, $subscriber);
     }
 
+    public function subscribeAll(EventHandlerInterface $subscriber): void
+    {
+        $this->publisher->subscribeAll($subscriber);
+    }
+
     private function chainMiddlewares(): void
     {
         $this->chain = array_reduce(

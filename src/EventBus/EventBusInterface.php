@@ -7,4 +7,6 @@ namespace Backslash\EventBus;
 interface EventBusInterface extends EventStreamPublisherInterface
 {
     public function subscribe(string $eventClass, EventHandlerInterface $subscriber): void;
+
+    public function subscribeAll(EventHandlerInterface $subscriber): void;
 }

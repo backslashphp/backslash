@@ -98,6 +98,49 @@ $eventBus->subscribe(StudentRegisteredEvent::class, $notificationHandler);
 
 A single handler can respond to multiple event types, and multiple handlers can respond to the same event.
 
+## Subscribing to all events
+
+Use `subscribeAll()` to register a handler that receives every published event, regardless of type:
+
+```php
+$eventBus->subscribeAll($loggingHandler);
+```
+
+This is useful for cross-cutting concerns like global logging, audit trails, or monitoring. Handlers registered with
+`subscribeAll()` execute after all event-specific handlers, ensuring they run last in the handler chain.
+
+If a handler is registered both with `subscribe()` for specific events and with `subscribeAll()`, it will only be called
+once per event to avoid duplicates.
+
+**Example logging handler:**
+
+```php
+class EventLoggingHandler implements EventHandlerInterface
+{
+    use EventHandlerTrait;
+
+    public function __construct(
+        private LoggerInterface $logger,
+    ) {
+    }
+
+    public function handle(RecordedEvent $recordedEvent): void
+    {
+        $event = $recordedEvent->getEvent();
+
+        $this->logger->info('Event published', [
+            'event_type' => $event::class,
+            'event_data' => $event->toArray(),
+            'recorded_at' => $recordedEvent->getRecordTime()->format('Y-m-d H:i:s'),
+            'metadata' => $recordedEvent->getMetadata()->toArray(),
+        ]);
+    }
+}
+```
+
+When using `subscribeAll()`, implement the `handle()` method directly instead of using the trait's automatic routing,
+since you're handling all event types rather than specific ones.
+
 ## Handling multiple event types
 
 A single handler class can respond to different events by implementing multiple handler methods:
