@@ -33,7 +33,11 @@ trait ToArrayTrait
                     );
                 }
                 if (array_key_exists($paramName, $data)) {
-                    $args[] = $data[$paramName];
+                    if ($parameter->isVariadic()) {
+                        $args = array_merge($args, $data[$paramName]);
+                    } else {
+                        $args[] = $data[$paramName];
+                    }
                 }
             }
         }
