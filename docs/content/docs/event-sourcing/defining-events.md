@@ -114,6 +114,9 @@ $serialized = $event->toArray();
 $restored = StudentSubscribedToCourseEvent::fromArray($serialized);
 ```
 
+`ToArrayTrait` also supports variadic constructor parameters, which is useful to document the expected type of array
+elements directly in the constructor signature (e.g. `string ...$userIds` instead of `array $userIds`).
+
 For events with value objects or complex structures, implement `toArray()` and `fromArray()` manually:
 
 ```php
