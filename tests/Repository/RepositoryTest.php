@@ -94,4 +94,23 @@ class RepositoryTest extends TestCase
             ],
         );
     }
+
+    #[Test]
+    public function it_adds_inner_middleware_closest_to_core(): void
+    {
+        $output = [];
+        $this->repository->addMiddleware(new TestRepositoryMiddleware('outer', $output));
+        $this->repository->addInnerMiddleware(new TestRepositoryMiddleware('inner', $output));
+
+        $this->repository->loadModel(StudentRegistrationModel::class, EventClass::in());
+        $this->assertEquals(
+            [
+                'before outer',
+                'before inner',
+                'after inner',
+                'after outer',
+            ],
+            $output,
+        );
+    }
 }

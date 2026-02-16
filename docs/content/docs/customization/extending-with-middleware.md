@@ -326,6 +326,30 @@ Execution flow:
 6. ProjectionStore commits buffered projections
 7. PDO transaction commits
 
+## Inner middleware
+
+By default, `addMiddleware()` adds a new outer layer to the onion. If you need a middleware to execute closest to the
+core (innermost layer), use `addInnerMiddleware()` instead:
+
+```php
+$dispatcher->addMiddleware($transaction);          // Outer layer
+$dispatcher->addMiddleware($logging);              // Middle layer
+$dispatcher->addInnerMiddleware($tracing);         // Inner layer (closest to core)
+```
+
+Execution flow:
+
+```
+Transaction → Logging → Tracing → [Core] → Tracing → Logging → Transaction
+```
+
+This is useful when a middleware must always run closest to the core, regardless of what other middleware has already
+been registered. For example, the Scenario testing component uses `addInnerMiddleware()` to ensure its tracing middleware
+captures exactly what the core produces, even when the host application has added its own middleware to the EventBus or
+ProjectionStore.
+
+All components that support middleware provide both `addMiddleware()` and `addInnerMiddleware()`.
+
 ## Best practices
 
 **Keep middleware focused.** Each middleware should handle a single concern; avoid creating god middleware that handles

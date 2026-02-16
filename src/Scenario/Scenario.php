@@ -61,10 +61,10 @@ final class Scenario
             fn () => Uuid::uuid4()->toString(),
         ));
         $this->eventBusMiddleware = new ScenarioEventBusMiddleware();
-        $this->eventBus->addMiddleware($this->eventBusMiddleware);
+        $this->eventBus->addInnerMiddleware($this->eventBusMiddleware);
         $this->projectionStoreMiddleware = new ScenarioProjectionStoreMiddleware();
         $this->projectionStore = $projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter());
-        $this->projectionStore->addMiddleware($this->projectionStoreMiddleware);
+        $this->projectionStore->addInnerMiddleware($this->projectionStoreMiddleware);
         $this->repository = $repository ?? new Repository($this->eventStore, $this->eventBus);
     }
 

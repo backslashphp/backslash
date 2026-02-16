@@ -34,6 +34,12 @@ final class Dispatcher implements DispatcherInterface
         $this->chain = null;
     }
 
+    public function addInnerMiddleware(MiddlewareInterface $middleware): void
+    {
+        array_unshift($this->middlewares, $middleware);
+        $this->chain = null;
+    }
+
     /** @return MiddlewareInterface[] */
     public function getMiddlewares(): array
     {

@@ -89,4 +89,25 @@ class MiddlewareTest extends TestCase
             ],
         );
     }
+
+    #[Test]
+    public function it_adds_inner_middleware_closest_to_core(): void
+    {
+        $store = new ProjectionStore(new InMemoryProjectionStoreAdapter());
+
+        $output = [];
+        $store->addMiddleware(new TestMiddleware('outer', $output));
+        $store->addInnerMiddleware(new TestMiddleware('inner', $output));
+
+        $store->store(new TestFooProjection('123'));
+        $this->assertEquals(
+            [
+                'before store outer',
+                'before store inner',
+                'after store inner',
+                'after store outer',
+            ],
+            $output,
+        );
+    }
 }

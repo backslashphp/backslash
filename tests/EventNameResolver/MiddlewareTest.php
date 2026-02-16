@@ -43,4 +43,25 @@ class MiddlewareTest extends TestCase
             ],
         );
     }
+
+    #[Test]
+    public function it_adds_inner_middleware_closest_to_core(): void
+    {
+        $output = new Output();
+
+        $resolver = new EventNameResolver(new MatchingClassEventNameResolverAdapter());
+        $resolver->addMiddleware(new TestMiddleware('outer', $output));
+        $resolver->addInnerMiddleware(new TestMiddleware('inner', $output));
+
+        $resolver->resolveName(StudentRegisteredEvent::class);
+        $this->assertEquals(
+            [
+                'before resolveName outer',
+                'before resolveName inner',
+                'after resolveName inner',
+                'after resolveName outer',
+            ],
+            $output->read(),
+        );
+    }
 }

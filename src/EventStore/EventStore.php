@@ -34,6 +34,12 @@ final class EventStore implements EventStoreInterface
         $this->chainMiddlewares();
     }
 
+    public function addInnerMiddleware(MiddlewareInterface $middleware): void
+    {
+        array_unshift($this->middlewares, $middleware);
+        $this->chainMiddlewares();
+    }
+
     /** @return MiddlewareInterface[] */
     public function getMiddlewares(): array
     {

@@ -42,4 +42,25 @@ class MiddlewareTest extends TestCase
             ],
         );
     }
+
+    #[Test]
+    public function it_adds_inner_middleware_closest_to_core(): void
+    {
+        $output = new Output();
+
+        $serializer = new Serializer(new SerializeFunctionSerializer());
+        $serializer->addMiddleware(new TestMiddleware('outer', $output));
+        $serializer->addInnerMiddleware(new TestMiddleware('inner', $output));
+
+        $serializer->serialize(new stdClass());
+        $this->assertEquals(
+            [
+                'before serialize outer',
+                'before serialize inner',
+                'after serialize inner',
+                'after serialize outer',
+            ],
+            $output->read(),
+        );
+    }
 }

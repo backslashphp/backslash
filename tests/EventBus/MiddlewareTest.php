@@ -33,4 +33,25 @@ class MiddlewareTest extends TestCase
             ],
         );
     }
+
+    #[Test]
+    public function it_adds_inner_middleware_closest_to_core(): void
+    {
+        $bus = new EventBus();
+
+        $output = [];
+        $bus->addMiddleware(new TestMiddleware('outer', $output));
+        $bus->addInnerMiddleware(new TestMiddleware('inner', $output));
+
+        $bus->publish(new RecordedEventStream());
+        $this->assertEquals(
+            [
+                'before outer',
+                'before inner',
+                'after inner',
+                'after outer',
+            ],
+            $output,
+        );
+    }
 }

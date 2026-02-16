@@ -88,4 +88,25 @@ class MiddlewareTest extends TestCase
             ],
         );
     }
+
+    #[Test]
+    public function it_adds_inner_middleware_closest_to_core(): void
+    {
+        $store = new EventStore(new TestAdapter());
+
+        $output = [];
+        $store->addMiddleware(new TestMiddleware('outer', $output));
+        $store->addInnerMiddleware(new TestMiddleware('inner', $output));
+
+        $store->fetch(null);
+        $this->assertEquals(
+            [
+                'before fetch outer',
+                'before fetch inner',
+                'after fetch inner',
+                'after fetch outer',
+            ],
+            $output,
+        );
+    }
 }
