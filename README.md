@@ -32,7 +32,7 @@ composer require backslashphp/backslash
 ## Requirements
 
 - PHP 8.2 or newer
-- `ext-json` and `ext-pdo` (MySQL or SQLite) extensions enabled
+- `ext-pdo` (MySQL or SQLite) extension enabled
 
 ## Documentation
 
