@@ -100,28 +100,26 @@ use Backslash\EventNameResolver\MatchingClassEventNameResolverAdapter;
 use Backslash\EventStore\EventStore;
 use Backslash\EventStore\EventStoreInterface;
 use Backslash\PdoEventStore\PdoEventStoreAdapter;
-use Backslash\PdoEventStore\Config as PdoEventStoreConfig;
 use Backslash\Serializer\Serializer;
 use Backslash\PdoEventStore\JsonEventSerializer;
-use Backslash\PdoEventStore\JsonIdentifiersSerializer;
 use Backslash\PdoEventStore\JsonMetadataSerializer;
 use Backslash\StreamEnricher\StreamEnricherEventStoreMiddleware;
 use Ramsey\Uuid\Uuid;
 
-EventStoreInterface::class => function (ContainerInterface $c) {
+PdoEventStoreAdapter::class => function (ContainerInterface $c) {
     $eventNameResolver = new EventNameResolver(new MatchingClassEventNameResolverAdapter());
-    $store = new EventStore(
-        new PdoEventStoreAdapter(
-            $c->get(PdoInterface::class),
-            new PdoEventStoreConfig(),
-            $eventNameResolver,
-            new Serializer(new JsonEventSerializer($eventNameResolver)),
-            new Serializer(new JsonIdentifiersSerializer()),
-            new Serializer(new JsonMetadataSerializer()),
-            fn () => Uuid::uuid4()->toString(),
-        ),
+    return new PdoEventStoreAdapter(
+        $c->get(PdoInterface::class),
+        $eventNameResolver,
+        new Serializer(new JsonEventSerializer($eventNameResolver)),
+        new Serializer(new JsonMetadataSerializer()),
+        fn () => Uuid::uuid4()->toString(),
     );
-    
+},
+
+EventStoreInterface::class => function (ContainerInterface $c) {
+    $store = new EventStore($c->get(PdoEventStoreAdapter::class));
+
     $store->addMiddleware(
         new StreamEnricherEventStoreMiddleware(
             $c->get(StreamEnricherInterface::class)
@@ -132,8 +130,13 @@ EventStoreInterface::class => function (ContainerInterface $c) {
 },
 ```
 
-The EventStore requires an adapter (`PdoEventStoreAdapter`), serializers for events, identifiers, and metadata, and a
-function to generate event IDs.
+Registering `PdoEventStoreAdapter::class` as its own service (rather than inlining it in the
+`EventStoreInterface` factory) lets test bootstraps resolve it directly to call
+`setupDatabase()`, see [Setting Up Tests](../testing/setting-up-tests.md).
+
+The EventStore requires an adapter (`PdoEventStoreAdapter`), serializers for events and metadata, and a function to
+generate event IDs. Identifiers are never persisted or reread — they're always recomputed from the event payload via
+`Event::getIdentifiers()`, so there's no identifiers serializer to configure.
 
 Add the `StreamEnricherEventStoreMiddleware` to inject metadata into events as they're persisted.
 
@@ -145,7 +148,6 @@ Define the ProjectionStore with its adapter and middleware:
 use Backslash\ProjectionStore\ProjectionStore;
 use Backslash\ProjectionStore\ProjectionStoreInterface;
 use Backslash\PdoProjectionStore\PdoProjectionStoreAdapter;
-use Backslash\PdoProjectionStore\Config as PdoProjectionStoreConfig;
 use Backslash\Serializer\SerializeFunctionSerializer;
 use Backslash\CacheProjectionStoreMiddleware\CacheProjectionStoreMiddleware;
 
@@ -154,7 +156,6 @@ ProjectionStoreInterface::class => function (ContainerInterface $c) {
         new PdoProjectionStoreAdapter(
             $c->get(PdoInterface::class),
             new Serializer(new SerializeFunctionSerializer()),
-            new PdoProjectionStoreConfig(),
         ),
     );
     
@@ -164,7 +165,7 @@ ProjectionStoreInterface::class => function (ContainerInterface $c) {
 },
 ```
 
-The ProjectionStore requires an adapter (`PdoProjectionStoreAdapter`), a serializer, and configuration.
+The ProjectionStore requires an adapter (`PdoProjectionStoreAdapter`) and a serializer.
 
 Add the `CacheProjectionStoreMiddleware` to cache projections in memory and reduce database queries.
 
@@ -181,7 +182,6 @@ ProjectionStoreInterface::class => function (ContainerInterface $c) {
         : new PdoProjectionStoreAdapter(
             $c->get(PdoInterface::class),
             new Serializer(new SerializeFunctionSerializer()),
-            new PdoProjectionStoreConfig(),
         );
     
     $store = new ProjectionStore($adapter);
@@ -200,15 +200,48 @@ Define the Repository with its dependencies:
 ```php
 use Backslash\Repository\Repository;
 use Backslash\Repository\RepositoryInterface;
+use Backslash\PdoTransactionRepositoryMiddleware\PdoTransactionRepositoryMiddleware;
+use Backslash\ProjectionStoreCommitRepositoryMiddleware\ProjectionStoreCommitRepositoryMiddleware;
 
-RepositoryInterface::class => fn (ContainerInterface $c) => new Repository(
-    $c->get(EventStoreInterface::class),
-    $c->get(EventBusInterface::class),
-),
+RepositoryInterface::class => function (ContainerInterface $c) {
+    $repository = new Repository(
+        $c->get(EventStoreInterface::class),
+        $c->get(EventBusInterface::class),
+    );
+
+    $repository->addMiddleware(
+        new ProjectionStoreCommitRepositoryMiddleware(
+            $c->get(ProjectionStoreInterface::class)
+        )
+    );
+
+    $repository->addMiddleware(
+        new PdoTransactionRepositoryMiddleware(
+            $c->get(PdoInterface::class)
+        )
+    );
+
+    return $repository;
+},
 ```
 
 The Repository requires the EventStore for loading and persisting events, and the EventBus for publishing events after
 persistence.
+
+Register `ProjectionStoreCommitRepositoryMiddleware` before `PdoTransactionRepositoryMiddleware`. Since
+`addMiddleware()` adds each new middleware as an outer layer, registering `PdoTransactionRepositoryMiddleware` last
+makes the PDO transaction wrap the ProjectionStore commit:
+
+```
+Pdo::begin()
+  → ProjectionStoreCommitRepositoryMiddleware
+    → storeChanges()  (append() + publish())
+  → ProjectionStore::commit()  (only if publish() succeeded)
+Pdo::commit()
+```
+
+Reversing the order breaks the joint rollback: if `publish()` fails, nothing in the code enforces this order — it
+depends entirely on registration order in your bootstrap.
 
 ## Configuring the EventBus
 
@@ -240,37 +273,19 @@ process explained in [section 17](#17-registering-handlers).
 
 ## Configuring the Dispatcher
 
-Define the Dispatcher with its middleware:
+Define the Dispatcher:
 
 ```php
 use Backslash\CommandDispatcher\Dispatcher;
 use Backslash\CommandDispatcher\DispatcherInterface;
-use Backslash\PdoTransactionCommandDispatcherMiddleware\PdoTransactionCommandDispatcherMiddleware;
-use Backslash\ProjectionStoreTransactionCommandDispatcherMiddleware\ProjectionStoreTransactionCommandDispatcherMiddleware;
 
-DispatcherInterface::class => function (ContainerInterface $c) {
-    $dispatcher = new Dispatcher();
-    
-    $dispatcher->addMiddleware(
-        new PdoTransactionCommandDispatcherMiddleware(
-            $c->get(PdoInterface::class)
-        )
-    );
-    
-    $dispatcher->addMiddleware(
-        new ProjectionStoreTransactionCommandDispatcherMiddleware(
-            $c->get(ProjectionStoreInterface::class)
-        )
-    );
-    
-    return $dispatcher;
-},
+DispatcherInterface::class => fn () => new Dispatcher(),
 ```
 
-Add the `PdoTransactionCommandDispatcherMiddleware` to wrap command execution in a database transaction.
-
-Add the `ProjectionStoreTransactionCommandDispatcherMiddleware` to automatically commit projections on success and
-rollback on failure.
+Transaction management for events and projections is handled by `PdoTransactionRepositoryMiddleware` and
+`ProjectionStoreCommitRepositoryMiddleware`, registered on the `Repository` (see "Configuring the Repository" above),
+not on the Dispatcher. Add Dispatcher middleware for other cross-cutting concerns like logging or validation; see
+[Extending with Middleware](../customization/extending-with-middleware.md).
 
 Command handler registration does not happen here; it occurs during the boot process explained
 in [section 17](#17-registering-handlers).

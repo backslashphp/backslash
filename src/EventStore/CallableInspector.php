@@ -7,7 +7,7 @@ namespace Backslash\EventStore;
 use Backslash\Event\RecordedEvent;
 use Backslash\EventStore\Query\QueryInterface;
 
-class CallableInspector implements InspectorInterface
+final class CallableInspector implements InspectorInterface
 {
     /** @var callable */
     private $callable;

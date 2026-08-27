@@ -6,7 +6,7 @@ namespace Backslash\EventStore\Query;
 
 use DateTimeImmutable;
 
-class EventTime implements QueryInterface
+final class EventTime implements QueryInterface
 {
     use SubqueriesTrait;
 

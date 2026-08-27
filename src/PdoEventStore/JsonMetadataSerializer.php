@@ -9,7 +9,7 @@ use Backslash\Serializer\AdapterInterface;
 use Backslash\Serializer\DeserializationException;
 use InvalidArgumentException;
 
-class JsonMetadataSerializer implements AdapterInterface
+final class JsonMetadataSerializer implements AdapterInterface
 {
     public function serialize(mixed $value): string
     {
@@ -28,6 +28,10 @@ class JsonMetadataSerializer implements AdapterInterface
         if (json_last_error()) {
             throw new DeserializationException();
         }
-        return new Metadata($array);
+        $metadata = new Metadata();
+        foreach ($array as $key => $value) {
+            $metadata = $metadata->with($key, $value);
+        }
+        return $metadata;
     }
 }

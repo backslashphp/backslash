@@ -10,7 +10,7 @@ use Backslash\Serializer\AdapterInterface;
 use Backslash\Serializer\DeserializationException;
 use InvalidArgumentException;
 
-class JsonEventSerializer implements AdapterInterface
+final class JsonEventSerializer implements AdapterInterface
 {
     private EventNameResolverInterface $eventNameResolver;
 

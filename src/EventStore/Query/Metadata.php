@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore\Query;
 
-class Metadata implements QueryInterface
+final class Metadata implements QueryInterface
 {
     use SubqueriesTrait;
 
@@ -14,29 +14,29 @@ class Metadata implements QueryInterface
 
     private bool $negative;
 
-    private function __construct(string $name, bool $negative, string|int ...$values)
+    private function __construct(string $name, bool $negative, string ...$values)
     {
         $this->name = $name;
         $this->negative = $negative;
         $this->values = $values;
     }
 
-    public static function is(string $name, string|int $value): QueryInterface
+    public static function is(string $name, string $value): QueryInterface
     {
         return new self($name, false, $value);
     }
 
-    public static function isNot(string $name, string|int $value): QueryInterface
+    public static function isNot(string $name, string $value): QueryInterface
     {
         return new self($name, true, $value);
     }
 
-    public static function in(string $name, string|int ...$values): QueryInterface
+    public static function in(string $name, string ...$values): QueryInterface
     {
         return new self($name, false, ...$values);
     }
 
-    public static function notIn(string $name, string|int ...$values): QueryInterface
+    public static function notIn(string $name, string ...$values): QueryInterface
     {
         return new self($name, true, ...$values);
     }

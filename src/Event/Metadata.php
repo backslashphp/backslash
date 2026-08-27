@@ -8,12 +8,7 @@ final class Metadata
 {
     private array $data = [];
 
-    public function __construct(array $data = [])
-    {
-        $this->data = $data;
-    }
-
-    public function get(string $key): mixed
+    public function get(string $key): ?string
     {
         if ($this->has($key)) {
             return $this->data[$key];
@@ -26,7 +21,7 @@ final class Metadata
         return array_key_exists($key, $this->data);
     }
 
-    public function with(string $key, mixed $value): self
+    public function with(string $key, string $value): self
     {
         $clone = clone $this;
         $clone->data[$key] = $value;

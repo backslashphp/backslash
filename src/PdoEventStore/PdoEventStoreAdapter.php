@@ -21,13 +21,9 @@ final class PdoEventStoreAdapter implements AdapterInterface
 {
     private PdoInterface $pdo;
 
-    private Config $config;
-
     private EventNameResolverInterface $eventNameResolver;
 
     private SerializerInterface $eventSerializer;
-
-    private SerializerInterface $identifiersSerializer;
 
     private SerializerInterface $metadataSerializer;
 
@@ -38,18 +34,14 @@ final class PdoEventStoreAdapter implements AdapterInterface
 
     public function __construct(
         PdoInterface $pdo,
-        Config $config,
         EventNameResolverInterface $eventNameResolver,
         SerializerInterface $eventSerializer,
-        SerializerInterface $identifiersSerializer,
         SerializerInterface $metadataSerializer,
         callable $eventIdGenerator,
     ) {
         $this->pdo = $pdo;
-        $this->config = $config;
         $this->eventNameResolver = $eventNameResolver;
         $this->eventSerializer = $eventSerializer;
-        $this->identifiersSerializer = $identifiersSerializer;
         $this->metadataSerializer = $metadataSerializer;
         $this->eventIdGenerator = $eventIdGenerator;
         $this->detectDriver();
@@ -57,14 +49,15 @@ final class PdoEventStoreAdapter implements AdapterInterface
 
     public function setupDatabase(): void
     {
-        $sql = $this->driver->buildCreateTableStatement($this->config);
-        $this->pdo->exec($sql);
+        foreach ($this->driver->buildCreateTableStatements() as $sql) {
+            $this->pdo->exec($sql);
+        }
     }
 
     public function fetch(?QueryInterface $query, int $fromSequence = 0): StoredRecordedEventStream
     {
-        $whereClause = new QueryToWhereClause($query, $this->driver, $this->config, $this->eventNameResolver);
-        $sql = $this->driver->buildSelectStatement($fromSequence, $whereClause, $this->config);
+        $whereClause = new QueryToWhereClause($query, $this->eventNameResolver);
+        $sql = $this->driver->buildSelectStatement($fromSequence, $whereClause);
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($whereClause->getValues());
 
@@ -72,7 +65,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
         while ($row = $stmt->fetch()) {
             $stream = $stream
                 ->withRecordedEvents($this->buildEventFromRow($row))
-                ->withHighestSequence($row[$this->config->getAlias('sequence')]);
+                ->withHighestSequence((int) $row['sequence']);
         }
         return $stream;
     }
@@ -83,26 +76,24 @@ final class PdoEventStoreAdapter implements AdapterInterface
             return;
         }
 
-        [$sql, $values] = $this->driver->buildInsertStatementAndValues(
+        [$eventStatement, $identifiersStatement, $metadataStatement] = $this->driver->buildInsertStatementsAndValues(
             $stream,
             $concurrencyCheck,
             $expectedSequence,
             $this->eventNameResolver,
             $this->eventSerializer,
-            $this->identifiersSerializer,
             $this->metadataSerializer,
             $this->eventIdGenerator,
-            $this->config,
         );
 
-        $stmt = $this->pdo->prepare($sql);
-        foreach ($values as $index => $value) {
-            $stmt->bindValue($index + 1, $value);
-        }
-        $stmt->execute();
-
-        if ($stmt->rowCount() === 0) {
+        if ($this->execute($eventStatement) === 0) {
             throw new ConcurrencyException();
+        }
+
+        foreach ([$identifiersStatement, $metadataStatement] as $childStatement) {
+            if ($childStatement !== null) {
+                $this->execute($childStatement);
+            }
         }
     }
 
@@ -110,11 +101,9 @@ final class PdoEventStoreAdapter implements AdapterInterface
     {
         $whereClause = new QueryToWhereClause(
             $inspector->getQuery(),
-            $this->driver,
-            $this->config,
             $this->eventNameResolver,
         );
-        $sql = $this->driver->buildSelectStatement(0, $whereClause, $this->config);
+        $sql = $this->driver->buildSelectStatement(0, $whereClause);
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($whereClause->getValues());
 
@@ -125,8 +114,9 @@ final class PdoEventStoreAdapter implements AdapterInterface
 
     public function purge(): void
     {
-        $sql = $this->driver->buildTruncateTableStatement($this->config);
-        $this->pdo->exec($sql);
+        $this->pdo->exec($this->driver->buildTruncateTableStatement('event_store_identifiers'));
+        $this->pdo->exec($this->driver->buildTruncateTableStatement('event_store_metadata'));
+        $this->pdo->exec($this->driver->buildTruncateTableStatement('event_store'));
     }
 
     private function detectDriver(): void
@@ -136,17 +126,26 @@ final class PdoEventStoreAdapter implements AdapterInterface
         }
     }
 
+    private function execute(array $statement): int
+    {
+        [$sql, $values] = $statement;
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($values as $index => $value) {
+            $stmt->bindValue($index + 1, $value);
+        }
+        $stmt->execute();
+        return $stmt->rowCount();
+    }
+
     private function buildEventFromRow(array $row): RecordedEvent
     {
         return RecordedEvent::create(
             $this->eventSerializer->deserialize(
-                $row[$this->config->getAlias('event_payload')],
-                $row[$this->config->getAlias('event_name')],
+                $row['event_payload'],
+                $row['event_name'],
             ),
-            $this->metadataSerializer->deserialize(
-                $row[$this->config->getAlias('event_metadata')],
-            ),
-            new DateTimeImmutable($row[$this->config->getAlias('event_time')]),
+            $this->metadataSerializer->deserialize($row['event_metadata']),
+            new DateTimeImmutable($row['event_time']),
         );
     }
 }

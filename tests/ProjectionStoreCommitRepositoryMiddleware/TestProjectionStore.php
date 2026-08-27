@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Backslash\ProjectionStoreTransactionCommandDispatcherMiddleware;
+namespace Backslash\ProjectionStoreCommitRepositoryMiddleware;
 
 use Backslash\Projection\ProjectionInterface;
 use Backslash\ProjectionStore\AdapterInterface;
@@ -53,11 +53,5 @@ class TestProjectionStore implements AdapterInterface
     public function getCalls(): array
     {
         return $this->calls;
-    }
-
-    public function reset(): void
-    {
-        $this->calls = [];
-        $this->adapter->purge();
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventNameResolver;
 
-class EventNameResolver implements EventNameResolverInterface
+final class EventNameResolver implements EventNameResolverInterface
 {
     private AdapterInterface $adapter;
 

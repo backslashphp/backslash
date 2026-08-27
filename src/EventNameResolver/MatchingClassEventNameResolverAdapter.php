@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventNameResolver;
 
-class MatchingClassEventNameResolverAdapter implements AdapterInterface
+final class MatchingClassEventNameResolverAdapter implements AdapterInterface
 {
     public function resolveClass(string $eventName): string
     {

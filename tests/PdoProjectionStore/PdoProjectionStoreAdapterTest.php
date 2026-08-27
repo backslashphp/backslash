@@ -32,7 +32,7 @@ class PdoProjectionStoreAdapterTest extends TestCase
         );
         $serializer = new Serializer(new SerializeFunctionSerializer());
 
-        $store = new ProjectionStore(new PdoProjectionStoreAdapter($pdo, $serializer, new Config()));
+        $store = new ProjectionStore(new PdoProjectionStoreAdapter($pdo, $serializer));
         $store->store(new TestProjection('123'));
         $store->commit();
 

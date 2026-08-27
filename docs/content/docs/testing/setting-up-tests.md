@@ -51,12 +51,11 @@ namespace Tests;
 
 use Backslash\CommandDispatcher\DispatcherInterface;
 use Backslash\EventBus\EventBusInterface;
-use Backslash\PdoEventStore\Config;
-use Backslash\PdoEventStore\Driver;
+use Backslash\EventStore\EventStoreInterface;
+use Backslash\PdoEventStore\PdoEventStoreAdapter;
 use Backslash\ProjectionStore\ProjectionStoreInterface;
 use Backslash\Scenario\AssertionsTrait;
 use Backslash\Scenario\Scenario;
-use PDO;
 use PHPUnit\Framework\TestCase as PHPUnitTestCase;
 use Psr\Container\ContainerInterface;
 
@@ -75,11 +74,10 @@ abstract class TestCase extends PHPUnitTestCase
         // Bootstrap your DI container
         $this->container = require __DIR__ . '/../bootstrap.php';
 
-        // Get PDO SQLite instance – Make sure your DI container uses the PDO_DSN variable in phpunit.xml when running tests! 
-        $pdo = $this->container->get(PDO::class);
-        
-        // Create table for the EventStore
-        $pdo->exec(Driver::SQLITE->buildCreateTableStatement(new Config()));
+        // Create table for the EventStore – Make sure your DI container uses the PDO_DSN variable in phpunit.xml when running tests!
+        /** @var PdoEventStoreAdapter $adapter */
+        $adapter = $this->container->get(PdoEventStoreAdapter::class);
+        $adapter->setupDatabase();
 
         // Create Scenario instance with required dependencies
         $this->scenario = new Scenario(
@@ -107,8 +105,7 @@ abstract class TestCase extends PHPUnitTestCase
 This base test case provides:
 
 - **Container bootstrap**: Loads the application's dependency injection container
-- **Database setup**: Creates EventStore tables using the SQLite driver; `Driver::SQLITE` generates the appropriate
-  CREATE TABLE statement, while `Config` allows customization of table and column names if needed
+- **Database setup**: Creates EventStore tables by calling `PdoEventStoreAdapter::setupDatabase()`
 - **In-memory SQLite**: Fast and isolated; each test gets a fresh database without external dependencies
 - **Scenario instance**: Ready-to-use `Scenario` with EventBus, Dispatcher, and ProjectionStore
 - **AssertionsTrait**: Provides scenario-specific assertions like `assertPublishedEventsContain()`,

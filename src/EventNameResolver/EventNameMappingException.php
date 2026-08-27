@@ -6,6 +6,6 @@ namespace Backslash\EventNameResolver;
 
 use Exception;
 
-class EventNameMappingException extends Exception
+final class EventNameMappingException extends Exception
 {
 }

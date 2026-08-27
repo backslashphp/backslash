@@ -245,25 +245,30 @@ use Backslash\CacheProjectionStoreMiddleware\CacheProjectionStoreMiddleware;
 $projectionStore->addMiddleware(new CacheProjectionStoreMiddleware());
 ```
 
-**PdoTransactionCommandDispatcherMiddleware** - Creates a PDO transaction for command dispatch; rolls back if an
-exception occurs to prevent new events from being written to the database:
+**PdoTransactionRepositoryMiddleware** - Wraps `Repository::storeChanges()` in a PDO transaction: begins before
+`append()`, commits after `publish()` succeeds, rolls back if it fails:
 
 ```php
-use Backslash\PdoTransactionCommandDispatcherMiddleware\PdoTransactionCommandDispatcherMiddleware;
+use Backslash\PdoTransactionRepositoryMiddleware\PdoTransactionRepositoryMiddleware;
 
-$dispatcher->addMiddleware(new PdoTransactionCommandDispatcherMiddleware($pdo));
+$repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 ```
 
-**ProjectionStoreTransactionCommandDispatcherMiddleware** - Calls `commit()` on ProjectionStore after command processing
-completes successfully:
+**ProjectionStoreCommitRepositoryMiddleware** - Calls `commit()` on ProjectionStore after `storeChanges()` completes
+successfully, `rollback()` otherwise:
 
 ```php
-use Backslash\ProjectionStoreTransactionCommandDispatcherMiddleware\ProjectionStoreTransactionCommandDispatcherMiddleware;
+use Backslash\ProjectionStoreCommitRepositoryMiddleware\ProjectionStoreCommitRepositoryMiddleware;
 
-$dispatcher->addMiddleware(
-    new ProjectionStoreTransactionCommandDispatcherMiddleware($projectionStore)
+$repository->addMiddleware(
+    new ProjectionStoreCommitRepositoryMiddleware($projectionStore)
 );
 ```
+
+Register `ProjectionStoreCommitRepositoryMiddleware` before `PdoTransactionRepositoryMiddleware` so the PDO
+transaction wraps the ProjectionStore commit — see
+[Defining Services](../application-setup/defining-services.md#configuring-the-repository) for the full ordering
+rationale.
 
 **StreamEnricherEventBusMiddleware** - Enriches events before publishing to EventBus:
 
@@ -307,24 +312,20 @@ This onion-layer pattern ensures middleware executes symmetrically before and af
 Here's a concrete example using Backslash's built-in middleware:
 
 ```php
-use Backslash\ProjectionStoreTransactionCommandDispatcherMiddleware\ProjectionStoreTransactionCommandDispatcherMiddleware;
-use Backslash\PdoTransactionCommandDispatcherMiddleware\PdoTransactionCommandDispatcherMiddleware;
+use Backslash\ProjectionStoreCommitRepositoryMiddleware\ProjectionStoreCommitRepositoryMiddleware;
+use Backslash\PdoTransactionRepositoryMiddleware\PdoTransactionRepositoryMiddleware;
 
 // Order matters: PDO transaction wraps everything
-$dispatcher->addMiddleware(new LoggingMiddleware($logger));                                            // Innermost
-$dispatcher->addMiddleware(new ProjectionStoreTransactionCommandDispatcherMiddleware($projectionStore)); // Middle
-$dispatcher->addMiddleware(new PdoTransactionCommandDispatcherMiddleware($pdo));                       // Outermost
+$repository->addMiddleware(new ProjectionStoreCommitRepositoryMiddleware($projectionStore)); // Inner
+$repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));                    // Outer
 ```
 
 Execution flow:
 
 1. PDO transaction begins
-2. ProjectionStore prepares for changes
-3. Logging records command
-4. Command executes, events are persisted
-5. Logging records completion
-6. ProjectionStore commits buffered projections
-7. PDO transaction commits
+2. `storeChanges()` executes: events are appended and published
+3. ProjectionStore commits buffered projections (only if publishing succeeded)
+4. PDO transaction commits
 
 ## Inner middleware
 

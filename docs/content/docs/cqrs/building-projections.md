@@ -269,7 +269,6 @@ Create a `ProjectionStore` instance with a storage adapter during your applicati
 ```php
 $pdo = new PdoProxy(fn() => new PDO('mysql:host=localhost;dbname=myapp', 'user', 'pass'));
 $serializer = new Serializer(new SerializeFunctionSerializer());
-$config = new Config();
 
 $adapter = new PdoProjectionStoreAdapter($pdo, $serializer, $config);
 $projectionStore = new ProjectionStore($adapter);
@@ -280,19 +279,6 @@ The `PdoProjectionStoreAdapter` requires:
 - **PDO connection**: Database connection via `PdoProxy` or direct `PDO` instance
 - **Serializer**: Converts projections to/from storage format; `SerializeFunctionSerializer` uses PHP's native
   `serialize()` function
-- **Config** (optional): Allows customization of database column names via `withTable()` and `withAlias()` methods
-
-Example with custom configuration:
-
-```php
-$config = (new Config())
-    ->withTable('my_projections')
-    ->withAlias('projection_id', 'id')
-    ->withAlias('projection_class', 'type')
-    ->withAlias('projection_payload', 'data');
-
-$adapter = new PdoProjectionStoreAdapter($pdo, $serializer, $config);
-```
 
 For testing, use the `InMemoryProjectionStoreAdapter`:
 
@@ -303,22 +289,22 @@ $projectionStore = new ProjectionStore($adapter);
 
 This adapter stores projections in memory, making it fast and isolated for test scenarios.
 
-## Committing automatically after command handling
+## Committing automatically after model changes
 
-Backslash provides `ProjectionStoreTransactionCommandDispatcherMiddleware`, a command dispatcher middleware that manages
-projection transactions automatically. It wraps the command dispatch process in a transaction and calls `commit()` on
-the `ProjectionStore` when the command completes successfully. If an exception occurs during command processing, the
-middleware calls `rollback()` to discard buffered changes.
+Backslash provides `ProjectionStoreCommitRepositoryMiddleware`, a repository middleware that manages projection
+transactions automatically. It wraps `storeChanges()` and calls `commit()` on the `ProjectionStore` after events are
+successfully persisted and published. If publishing fails, the middleware calls `rollback()` to discard buffered
+changes.
 
 ```php
-use Backslash\ProjectionStoreTransactionCommandDispatcherMiddleware\ProjectionStoreTransactionCommandDispatcherMiddleware;
+use Backslash\ProjectionStoreCommitRepositoryMiddleware\ProjectionStoreCommitRepositoryMiddleware;
 
-$dispatcher->addMiddleware(
-    new ProjectionStoreTransactionCommandDispatcherMiddleware($projectionStore)
+$repository->addMiddleware(
+    new ProjectionStoreCommitRepositoryMiddleware($projectionStore)
 );
 ```
 
-This middleware is typically added to the command dispatcher during application bootstrap, ensuring all commands benefit
+This middleware is typically added to the repository during application bootstrap, ensuring all model changes benefit
 from automatic transaction management without requiring explicit commit/rollback calls in command handlers.
 
 ## Creating projectors

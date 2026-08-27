@@ -6,6 +6,6 @@ namespace Backslash\Serializer;
 
 use Exception;
 
-class SerializationException extends Exception
+final class SerializationException extends Exception
 {
 }

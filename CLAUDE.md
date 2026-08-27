@@ -97,9 +97,7 @@ EventBus.publish() → EventHandlers (Projectors)
 **`PdoEventStore/`** - Database-backed EventStore implementation
 - `PdoEventStoreAdapter.php` - PDO implementation with concurrency control
 - `Driver.php` - Driver abstraction (MySQL, SQLite)
-- `Config.php` - Configuration for table/column names
 - `JsonEventSerializer.php` - JSON event serialization
-- `JsonIdentifiersSerializer.php` - Identifier serialization
 - `JsonMetadataSerializer.php` - Metadata serialization
 - `QueryToWhereClause.php` - Converts queries to SQL WHERE clauses
 
@@ -120,8 +118,8 @@ EventBus.publish() → EventHandlers (Projectors)
 
 #### Middleware
 
-**`PdoTransactionCommandDispatcherMiddleware/`** - Wraps dispatch in DB transaction
-**`ProjectionStoreTransactionCommandDispatcherMiddleware/`** - Projection store transaction
+**`PdoTransactionRepositoryMiddleware/`** - Wraps `storeChanges()` in a DB transaction
+**`ProjectionStoreCommitRepositoryMiddleware/`** - Commits/rolls back ProjectionStore after `storeChanges()`
 **`CacheProjectionStoreMiddleware/`** - Caches projection lookups
 
 #### Testing
@@ -310,11 +308,12 @@ readonly class RegisterStudentCommand
 
 ### 1. Middleware Chain Pattern
 
-The dispatcher and event bus use a middleware chain for cross-cutting concerns.
+The dispatcher, event bus, and repository each use a middleware chain for cross-cutting concerns.
 
 ```php
 $dispatcher->addMiddleware(new LoggingMiddleware());
-$dispatcher->addMiddleware(new PdoTransactionCommandDispatcherMiddleware($pdo));
+$repository->addMiddleware(new ProjectionStoreCommitRepositoryMiddleware($projectionStore));
+$repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
 // LIFO execution (last registered wraps first)
 ```

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Backslash\ProjectionStoreTransactionCommandDispatcherMiddleware;
+namespace Backslash\ProjectionStoreCommitRepositoryMiddleware;
 
 use Exception;
 

@@ -9,9 +9,7 @@ use Backslash\EventNameResolver\MatchingClassEventNameResolverAdapter;
 use Backslash\EventStore\EventStore;
 use Backslash\EventStore\Query\EventClass;
 use Backslash\Pdo\PdoProxy;
-use Backslash\PdoEventStore\Config;
 use Backslash\PdoEventStore\JsonEventSerializer;
-use Backslash\PdoEventStore\JsonIdentifiersSerializer;
 use Backslash\PdoEventStore\JsonMetadataSerializer;
 use Backslash\PdoEventStore\PdoEventStoreAdapter;
 use Backslash\Shared\Model\StudentNameChangeModel;
@@ -35,10 +33,8 @@ class RepositoryTest extends TestCase
         $eventNameResolver = new MatchingClassEventNameResolverAdapter();
         $adapter = new PdoEventStoreAdapter(
             $pdo,
-            new Config(),
             $eventNameResolver,
             new JsonEventSerializer($eventNameResolver),
-            new JsonIdentifiersSerializer(),
             new JsonMetadataSerializer(),
             fn () => Uuid::uuid4()->toString(),
         );

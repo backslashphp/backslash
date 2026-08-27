@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Backslash\PdoTransactionCommandDispatcherMiddleware;
+namespace Backslash\PdoTransactionRepositoryMiddleware;
 
 use Backslash\Pdo\PdoInterface;
 use PDO;
 use PDOStatement;
+use RuntimeException;
 
 class TestPdo implements PdoInterface
 {
@@ -20,7 +21,7 @@ class TestPdo implements PdoInterface
 
     public function getPdo(): PDO
     {
-        throw new \RuntimeException('Not implemented');
+        throw new RuntimeException('Not implemented');
     }
 
     public function beginTransaction(): bool
@@ -101,16 +102,5 @@ class TestPdo implements PdoInterface
     public function getCalls(): array
     {
         return $this->calls;
-    }
-
-    public function reset(): void
-    {
-        $this->calls = [];
-        $this->inTransaction = false;
-    }
-
-    public function setInTransaction(bool $inTransaction): void
-    {
-        $this->inTransaction = $inTransaction;
     }
 }

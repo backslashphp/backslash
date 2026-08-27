@@ -20,24 +20,16 @@ final class PdoProjectionStoreAdapter implements AdapterInterface
 
     private SerializerInterface $serializer;
 
-    private Config $config;
-
-    public function __construct(PdoInterface $pdo, SerializerInterface $serializer, Config $config)
+    public function __construct(PdoInterface $pdo, SerializerInterface $serializer)
     {
         $this->pdo = $pdo;
         $this->serializer = $serializer;
-        $this->config = $config;
     }
 
     public function find(string $id, string $class): ProjectionInterface
     {
-        $sql = sprintf(
-            'select %s from %s where %s = :projectionId and %s = :projectionClass',
-            $this->config->getAlias('projection_payload'),
-            $this->config->getTable(),
-            $this->config->getAlias('projection_id'),
-            $this->config->getAlias('projection_class'),
-        );
+        $sql = 'select projection_payload from projection_store '
+            . 'where projection_id = :projectionId and projection_class = :projectionClass';
         $query = $this->pdo->prepare($sql);
         $success = $query->execute(
             [
@@ -62,12 +54,7 @@ final class PdoProjectionStoreAdapter implements AdapterInterface
 
     public function findBy(string $class): Generator
     {
-        $sql = sprintf(
-            'select %s from %s where %s = :projectionClass',
-            $this->config->getAlias('projection_payload'),
-            $this->config->getTable(),
-            $this->config->getAlias('projection_class'),
-        );
+        $sql = 'select projection_payload from projection_store where projection_class = :projectionClass';
         $query = $this->pdo->prepare($sql);
         $success = $query->execute(
             [
@@ -90,14 +77,8 @@ final class PdoProjectionStoreAdapter implements AdapterInterface
 
     public function has(string $id, string $class): bool
     {
-        $sql = sprintf(
-            'select %s, %s from %s where %s = :projectionId and %s = :projectionClass',
-            $this->config->getAlias('projection_id'),
-            $this->config->getAlias('projection_class'),
-            $this->config->getTable(),
-            $this->config->getAlias('projection_id'),
-            $this->config->getAlias('projection_class'),
-        );
+        $sql = 'select projection_id, projection_class from projection_store '
+            . 'where projection_id = :projectionId and projection_class = :projectionClass';
         $query = $this->pdo->prepare($sql);
         $success = $query->execute(
             [
@@ -125,8 +106,7 @@ final class PdoProjectionStoreAdapter implements AdapterInterface
 
     public function purge(): void
     {
-        $sql = sprintf('delete from %s where 1=1', $this->config->getTable());
-        $this->pdo->exec($sql);
+        $this->pdo->exec('delete from projection_store where 1=1');
     }
 
     private function store(ProjectionInterface $projection): void
@@ -136,16 +116,8 @@ final class PdoProjectionStoreAdapter implements AdapterInterface
         $payload = $this->serializer->serialize($projection);
         $this->remove($id, $class);
 
-        $insertColumns = [
-            $this->config->getAlias('projection_id'),
-            $this->config->getAlias('projection_class'),
-            $this->config->getAlias('projection_payload'),
-        ];
-        $sql = sprintf(
-            'insert into %s (%s) values (:projectionId, :projectionClass, :projectionPayload)',
-            $this->config->getTable(),
-            implode(',', $insertColumns),
-        );
+        $sql = 'insert into projection_store (projection_id,projection_class,projection_payload) '
+            . 'values (:projectionId, :projectionClass, :projectionPayload)';
         $query = $this->pdo->prepare($sql);
         $success = $query->execute(
             [
@@ -161,12 +133,7 @@ final class PdoProjectionStoreAdapter implements AdapterInterface
 
     private function remove(string $id, string $class): void
     {
-        $sql = sprintf(
-            'delete from %s where %s = :projectionId and %s = :projectionClass',
-            $this->config->getTable(),
-            $this->config->getAlias('projection_id'),
-            $this->config->getAlias('projection_class'),
-        );
+        $sql = 'delete from projection_store where projection_id = :projectionId and projection_class = :projectionClass';
         $query = $this->pdo->prepare($sql);
         $success = $query->execute(
             [

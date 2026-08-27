@@ -12,14 +12,11 @@ use Backslash\EventStore\Query\LogicOperator;
 use Backslash\EventStore\Query\Metadata;
 use Backslash\EventStore\Query\QueryInterface;
 use Backslash\EventStore\Query\Sequence;
+use LogicException;
 
 final class QueryToWhereClause
 {
     private ?QueryInterface $query;
-
-    private Driver $driver;
-
-    private Config $config;
 
     private EventNameResolverInterface $eventNameResolver;
 
@@ -31,13 +28,9 @@ final class QueryToWhereClause
 
     public function __construct(
         ?QueryInterface $query,
-        Driver $driver,
-        Config $config,
         EventNameResolverInterface $eventNameResolver,
     ) {
         $this->query = $query;
-        $this->driver = $driver;
-        $this->config = $config;
         $this->eventNameResolver = $eventNameResolver;
     }
 
@@ -75,8 +68,7 @@ final class QueryToWhereClause
                 );
                 /** @var EventClass $query */
                 $statement = sprintf(
-                    '%s %s (%s)',
-                    sprintf('`%s`', $this->config->getAlias('event_name')),
+                    '`event_name` %s (%s)',
                     $query->isNegative() ? 'NOT IN' : 'IN',
                     implode(', ', array_fill(0, count($eventNames), '?')),
                 );
@@ -84,42 +76,28 @@ final class QueryToWhereClause
                 break;
             case (Identifier::class):
                 /** @var Identifier $query */
-                if ($query->isIncludes()) {
-                    $statement = $this->driver->buildJsonArrayIncludesStatement(
-                        $this->config->getAlias('event_identifiers'),
-                        $query->getName(),
-                    );
-                } else {
-                    $statement = sprintf(
-                        '%s %s (%s)',
-                        $this->driver->buildJsonExtractStatement(
-                            $this->config->getAlias('event_identifiers'),
-                            $query->getName(),
-                        ),
-                        $query->isNegative() ? 'NOT IN' : 'IN',
-                        implode(', ', array_fill(0, count($query->getValues()), '?')),
-                    );
-                }
-                $this->values = array_merge($this->values, $query->getValues());
+                $statement = $this->buildChildTableSubquery(
+                    'event_store_identifiers',
+                    $query->getName(),
+                    $query->getValues(),
+                    $query->isNegative(),
+                );
+                $this->values = array_merge($this->values, [$query->getName()], $query->getValues());
                 break;
             case (Metadata::class):
                 /** @var Metadata $query */
-                $statement = sprintf(
-                    '%s %s (%s)',
-                    $this->driver->buildJsonExtractStatement(
-                        $this->config->getAlias('event_metadata'),
-                        $query->getName(),
-                    ),
-                    $query->isNegative() ? 'NOT IN' : 'IN',
-                    implode(', ', array_fill(0, count($query->getValues()), '?')),
+                $statement = $this->buildChildTableSubquery(
+                    'event_store_metadata',
+                    $query->getName(),
+                    $query->getValues(),
+                    $query->isNegative(),
                 );
-                $this->values = array_merge($this->values, $query->getValues());
+                $this->values = array_merge($this->values, [$query->getName()], $query->getValues());
                 break;
             case (Sequence::class):
                 /** @var Sequence $query */
                 $statement = sprintf(
-                    '%s %s',
-                    sprintf('`%s`', $this->config->getAlias('sequence')),
+                    '`sequence` %s',
                     match (true) {
                         $query->getMin() && $query->getMax() => sprintf('BETWEEN %d AND %d', $query->getMin(), $query->getMax()),
                         $query->getMin() && !$query->getMax() => sprintf('>= %d', $query->getMin()),
@@ -130,23 +108,34 @@ final class QueryToWhereClause
             case (EventTime::class):
                 /** @var EventTime $query */
                 $statement = sprintf(
-                    '%s %s ?',
-                    sprintf('`%s`', $this->config->getAlias('event_time')),
+                    '`event_time` %s ?',
                     $query->isAfter() ? '>=' : '<=',
                 );
                 $this->values = array_merge($this->values, [$query->getDateTime()->format('Y-m-d\TH:i:s.uP')]);
                 break;
+            default:
+                throw new LogicException(sprintf('Unsupported query type: %s', $query::class));
         }
 
         if (count($this->query->getSubqueries())) {
             /** @var LogicOperator $operator */
             /** @var QueryInterface $subquery */
             foreach ($this->query->getSubqueries() as [$operator, $subquery]) {
-                $where = new self($subquery, $this->driver, $this->config, $this->eventNameResolver);
+                $where = new self($subquery, $this->eventNameResolver);
                 $this->values = array_merge($this->values, $where->getValues());
                 $statement .= sprintf(' %s (%s)', $operator->value, $where->getStatement());
             }
         }
         $this->statement = $statement;
+    }
+
+    private function buildChildTableSubquery(string $tableName, string $name, array $values, bool $negative): string
+    {
+        return sprintf(
+            '`event_store`.`event_uid` %s (SELECT `event_uid` FROM `%s` WHERE `name` = ? AND `value` IN (%s))',
+            $negative ? 'NOT IN' : 'IN',
+            $tableName,
+            implode(', ', array_fill(0, count($values), '?')),
+        );
     }
 }

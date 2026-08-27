@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\EventNameResolver;
 
-class MiddlewareDelegator implements EventNameResolverInterface
+final class MiddlewareDelegator implements EventNameResolverInterface
 {
     private MiddlewareInterface $middleware;
 

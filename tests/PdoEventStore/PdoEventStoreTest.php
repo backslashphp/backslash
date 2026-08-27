@@ -113,9 +113,9 @@ class PdoEventStoreTest extends TestCase
     {
         $this->store->append(
             new RecordedEventStream(
-                RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(['foo' => 'a']), new DateTimeImmutable('2024-01-01')),
-                RecordedEvent::create(new StudentRegisteredEvent('2', 'Mary'), new Metadata(['foo' => 'b']), new DateTimeImmutable('2024-01-02')),
-                RecordedEvent::create(new StudentNameChangedEvent('2', 'Mary', 'Anna'), new Metadata(['bar' => 'c']), new DateTimeImmutable('2024-01-03')),
+                RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), (new Metadata())->with('foo', 'a'), new DateTimeImmutable('2024-01-01')),
+                RecordedEvent::create(new StudentRegisteredEvent('2', 'Mary'), (new Metadata())->with('foo', 'b'), new DateTimeImmutable('2024-01-02')),
+                RecordedEvent::create(new StudentNameChangedEvent('2', 'Mary', 'Anna'), (new Metadata())->with('bar', 'c'), new DateTimeImmutable('2024-01-03')),
             ),
             null,
             null,

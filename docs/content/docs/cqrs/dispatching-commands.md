@@ -174,14 +174,13 @@ $dispatcher->registerHandler(
 
 ## Adding middleware
 
-Middleware wraps command dispatch to add cross-cutting concerns like logging, validation, or transactions:
+Middleware wraps command dispatch to add cross-cutting concerns like logging, validation or security:
 
 ```php
 $dispatcher = new Dispatcher();
 
-// Add transaction management
 $dispatcher->addMiddleware(
-    new ProjectionStoreTransactionCommandDispatcherMiddleware($projectionStore)
+    new MyCommandDispatcherMiddleware()
 );
 ```
 

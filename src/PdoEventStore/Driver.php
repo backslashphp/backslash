@@ -9,162 +9,117 @@ use Backslash\Event\RecordedEventStream;
 use Backslash\EventNameResolver\EventNameResolverInterface;
 use Backslash\EventStore\Query\QueryInterface;
 use Backslash\Serializer\SerializerInterface;
-use UnexpectedValueException;
 
 enum Driver: string
 {
-    public function buildCreateTableStatement(Config $config): string
+    public function buildCreateTableStatements(): array
     {
         return match ($this) {
-            self::MYSQL => sprintf(
-                'CREATE TABLE IF NOT EXISTS `%s` (`%s` MEDIUMINT NOT NULL AUTO_INCREMENT, `%s` TEXT NOT NULL, `%s` varchar(255) NOT NULL, `%s` JSON NOT NULL CHECK (JSON_VALID(`%s`)), `%s` JSON NOT NULL CHECK (JSON_VALID(`%s`)), `%s` JSON NOT NULL CHECK (JSON_VALID(`%s`)), `%s` varchar(255) NOT NULL, PRIMARY KEY (`%s`), CONSTRAINT `event_uid_unique` UNIQUE KEY (`%s`))',
-                $config->getTable(),
-                $config->getAlias('sequence'),
-                $config->getAlias('event_uid'),
-                $config->getAlias('event_name'),
-                $config->getAlias('event_payload'),
-                $config->getAlias('event_payload'),
-                $config->getAlias('event_identifiers'),
-                $config->getAlias('event_identifiers'),
-                $config->getAlias('event_metadata'),
-                $config->getAlias('event_metadata'),
-                $config->getAlias('event_time'),
-                $config->getAlias('sequence'),
-                $config->getAlias('event_uid'),
-            ),
-            self::SQLITE => sprintf(
-                'CREATE TABLE IF NOT EXISTS `%s` (`%s` INTEGER PRIMARY KEY AUTOINCREMENT, `%s` TEXT NOT NULL, `%s` TEXT NOT NULL, `%s` TEXT NOT NULL, `%s` TEXT NOT NULL, `%s` TEXT NOT NULL, `%s` TEXT, UNIQUE(`%s`))',
-                $config->getTable(),
-                $config->getAlias('sequence'),
-                $config->getAlias('event_uid'),
-                $config->getAlias('event_name'),
-                $config->getAlias('event_payload'),
-                $config->getAlias('event_identifiers'),
-                $config->getAlias('event_metadata'),
-                $config->getAlias('event_time'),
-                $config->getAlias('event_uid'),
-            ),
+            self::MYSQL => [
+                'CREATE TABLE IF NOT EXISTS `event_store` (`sequence` BIGINT NOT NULL AUTO_INCREMENT, `event_uid` VARCHAR(36) NOT NULL, `event_name` varchar(255) NOT NULL, `event_payload` JSON NOT NULL CHECK (JSON_VALID(`event_payload`)), `event_metadata` JSON NOT NULL CHECK (JSON_VALID(`event_metadata`)), `event_time` varchar(255) NOT NULL, PRIMARY KEY (`sequence`), CONSTRAINT `event_uid_unique` UNIQUE KEY (`event_uid`), KEY `event_store_event_name_idx` (`event_name`), KEY `event_store_event_time_idx` (`event_time`))',
+                'CREATE TABLE IF NOT EXISTS `event_store_identifiers` (`event_uid` VARCHAR(36) NOT NULL, `name` VARCHAR(255) NOT NULL, `value` VARCHAR(255) NOT NULL, KEY `event_store_identifiers_name_value_idx` (`name`, `value`, `event_uid`))',
+                'CREATE TABLE IF NOT EXISTS `event_store_metadata` (`event_uid` VARCHAR(36) NOT NULL, `name` VARCHAR(255) NOT NULL, `value` VARCHAR(255) NOT NULL, KEY `event_store_metadata_name_value_idx` (`name`, `value`, `event_uid`))',
+            ],
+            self::SQLITE => [
+                'CREATE TABLE IF NOT EXISTS `event_store` (`sequence` INTEGER PRIMARY KEY AUTOINCREMENT, `event_uid` TEXT NOT NULL, `event_name` TEXT NOT NULL, `event_payload` TEXT NOT NULL, `event_metadata` TEXT NOT NULL, `event_time` TEXT NOT NULL, UNIQUE(`event_uid`))',
+                'CREATE INDEX IF NOT EXISTS `event_store_event_name_idx` ON `event_store` (`event_name`)',
+                'CREATE INDEX IF NOT EXISTS `event_store_event_time_idx` ON `event_store` (`event_time`)',
+                'CREATE TABLE IF NOT EXISTS `event_store_identifiers` (`event_uid` TEXT NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL)',
+                'CREATE INDEX IF NOT EXISTS `event_store_identifiers_name_value_idx` ON `event_store_identifiers` (`name`, `value`, `event_uid`)',
+                'CREATE TABLE IF NOT EXISTS `event_store_metadata` (`event_uid` TEXT NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL)',
+                'CREATE INDEX IF NOT EXISTS `event_store_metadata_name_value_idx` ON `event_store_metadata` (`name`, `value`, `event_uid`)',
+            ],
         };
     }
 
-    public function buildTruncateTableStatement(Config $config): string
+    public function buildTruncateTableStatement(string $tableName): string
     {
-        return match ($this) {
-            self::MYSQL => sprintf('DELETE FROM `%s`', $config->getTable()),
-            self::SQLITE => sprintf('DELETE FROM `%s`', $config->getTable()),
-        };
+        return sprintf('DELETE FROM `%s`', $tableName);
     }
 
-    public function buildSelectStatement(int $fromSequence, QueryToWhereClause $where, Config $config): string
+    public function buildSelectStatement(int $fromSequence, QueryToWhereClause $where): string
     {
-        return match ($this) {
-            self::MYSQL => sprintf(
-                'SELECT DISTINCT `%s`.* FROM `%s` WHERE `%s` >= %d AND %s ORDER BY `%s` ASC',
-                $config->getTable(),
-                $config->getTable(),
-                $config->getAlias('sequence'),
-                $fromSequence,
-                $where->getStatement(),
-                $config->getAlias('sequence'),
-            ),
-            self::SQLITE => sprintf(
-                'SELECT DISTINCT `%s`.* FROM `%s` LEFT JOIN JSON_EACH(`%s`) ON JSON_VALID(`%s`) WHERE `%s` >= %d AND %s ORDER BY `%s` ASC',
-                $config->getTable(),
-                $config->getTable(),
-                $config->getAlias('event_identifiers'),
-                $config->getAlias('event_identifiers'),
-                $config->getAlias('sequence'),
-                $fromSequence,
-                $where->getStatement(),
-                $config->getAlias('sequence'),
-            ),
-        };
+        return sprintf(
+            'SELECT `event_store`.* FROM `event_store` WHERE `event_store`.`sequence` >= %d AND %s ORDER BY `event_store`.`sequence` ASC',
+            $fromSequence,
+            $where->getStatement(),
+        );
     }
 
-    public function buildJsonExtractStatement(string $column, string $field): string
-    {
-        return match ($this) {
-            self::MYSQL => sprintf('IFNULL(JSON_VALUE(`%s`, "$.%s"), "")', $column, $field),
-            self::SQLITE => sprintf('IFNULL(JSON_EXTRACT(`%s`, "$.%s"), "")', $column, $field),
-        };
-    }
-
-    public function buildJsonArrayIncludesStatement(string $column, string $path): string
-    {
-        if (preg_match('/[^a-zA-Z0-9_]/', $path) !== 0) {
-            throw new UnexpectedValueException('$path must contain only letters, numbers or underscores.');
-        }
-        return match ($this) {
-            self::MYSQL => sprintf('JSON_SEARCH(`%s`, "one", ?, "", "$.%s") IS NOT NULL', $column, $path),
-            self::SQLITE => sprintf('EXISTS (SELECT 1 FROM JSON_EACH(`%s`, "$.%s") WHERE `value` = ?)', $column, $path),
-        };
-    }
-
-    public function buildInsertStatementAndValues(
+    public function buildInsertStatementsAndValues(
         RecordedEventStream $stream,
         ?QueryInterface $concurrencyCheck,
         ?int $expectedSequence,
         EventNameResolverInterface $eventNameResolver,
         SerializerInterface $eventSerializer,
-        SerializerInterface $identifiersSerializer,
         SerializerInterface $metadataSerializer,
         callable $eventIdGenerator,
-        Config $config,
     ): array {
         $values = [];
-
         $unionSelects = [];
+        $identifierRows = [];
+        $metadataRows = [];
+
         /** @var RecordedEvent $recordedEvent */
         foreach ($stream as $index => $recordedEvent) {
-            $unionSelects[] = sprintf('SELECT %d `union_index`, ? `col1`, ? `col2`, ? `col3`, ? `col4`, ? `col5`, ? `col6`', $index);
+            $eventUid = $eventIdGenerator();
+
+            $unionSelects[] = sprintf('SELECT %d `union_index`, ? `col1`, ? `col2`, ? `col3`, ? `col4`, ? `col5`', $index);
             $values = array_merge($values, [
-                $eventIdGenerator(),
+                $eventUid,
                 $eventNameResolver->resolveName($recordedEvent->getEvent()::class),
                 $eventSerializer->serialize($recordedEvent->getEvent()),
-                $identifiersSerializer->serialize($recordedEvent->getEvent()->getIdentifiers()),
                 $metadataSerializer->serialize($recordedEvent->getMetadata()),
                 $recordedEvent->getRecordTime()->format('Y-m-d\TH:i:s.uP'),
             ]);
+
+            foreach ($recordedEvent->getEvent()->getIdentifiers()->toArray() as $name => $value) {
+                foreach ((array) $value as $singleValue) {
+                    $identifierRows[] = [$eventUid, $name, $singleValue];
+                }
+            }
+
+            foreach ($recordedEvent->getMetadata()->toArray() as $name => $value) {
+                $metadataRows[] = [$eventUid, $name, $value];
+            }
         }
         $unionSelects = implode(' UNION ', $unionSelects) . ' ORDER BY `union_index` ASC';
 
-        $concurrencyCheckWhere = new QueryToWhereClause($concurrencyCheck, $this, $config, $eventNameResolver);
+        $concurrencyCheckWhere = new QueryToWhereClause($concurrencyCheck, $eventNameResolver);
         $values = array_merge($values, $concurrencyCheckWhere->getValues());
 
-        $statement = match ($this) {
-            self::MYSQL => sprintf(
-                'INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) SELECT `col1`, `col2`, `col3`, `col4`, `col5`, `col6` FROM (%s) `union_selects` WHERE (SELECT IFNULL(MAX(`%s`), 0) FROM `%s` WHERE 1=1 AND %s) %s',
-                $config->getTable(),
-                $config->getAlias('event_uid'),
-                $config->getAlias('event_name'),
-                $config->getAlias('event_payload'),
-                $config->getAlias('event_identifiers'),
-                $config->getAlias('event_metadata'),
-                $config->getAlias('event_time'),
-                $unionSelects,
-                $config->getAlias('sequence'),
-                $config->getTable(),
-                $concurrencyCheckWhere->getStatement(),
-                $expectedSequence ? sprintf('= %d', $expectedSequence) : '>= 0',
-            ),
-            self::SQLITE => sprintf(
-                'INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) SELECT `col1`, `col2`, `col3`, `col4`, `col5`, `col6` FROM (%s) WHERE (SELECT IFNULL(MAX(`%s`), 0) FROM `%s` LEFT JOIN JSON_EACH(`%s`) ON JSON_VALID(`%s`) WHERE 1=1 AND %s) %s',
-                $config->getTable(),
-                $config->getAlias('event_uid'),
-                $config->getAlias('event_name'),
-                $config->getAlias('event_payload'),
-                $config->getAlias('event_identifiers'),
-                $config->getAlias('event_metadata'),
-                $config->getAlias('event_time'),
-                $unionSelects,
-                $config->getAlias('sequence'),
-                $config->getTable(),
-                $config->getAlias('event_identifiers'),
-                $config->getAlias('event_identifiers'),
-                $concurrencyCheckWhere->getStatement(),
-                $expectedSequence ? sprintf('= %d', $expectedSequence) : '>= 0',
-            ),
-        };
+        $eventStatement = sprintf(
+            'INSERT INTO `event_store` (`event_uid`, `event_name`, `event_payload`, `event_metadata`, `event_time`) SELECT `col1`, `col2`, `col3`, `col4`, `col5` FROM (%s) `union_selects` WHERE (SELECT IFNULL(MAX(`sequence`), 0) FROM `event_store` WHERE 1=1 AND %s) %s',
+            $unionSelects,
+            $concurrencyCheckWhere->getStatement(),
+            $expectedSequence ? sprintf('= %d', $expectedSequence) : '>= 0',
+        );
+
+        return [
+            [$eventStatement, $values],
+            $this->buildChildInsertStatementAndValues('event_store_identifiers', $identifierRows),
+            $this->buildChildInsertStatementAndValues('event_store_metadata', $metadataRows),
+        ];
+    }
+
+    private function buildChildInsertStatementAndValues(string $tableName, array $rows): ?array
+    {
+        if (!count($rows)) {
+            return null;
+        }
+
+        $values = [];
+        foreach ($rows as [$eventUid, $name, $value]) {
+            $values[] = $eventUid;
+            $values[] = $name;
+            $values[] = $value;
+        }
+
+        $statement = sprintf(
+            'INSERT INTO `%s` (`event_uid`, `name`, `value`) VALUES %s',
+            $tableName,
+            implode(', ', array_fill(0, count($rows), '(?, ?, ?)')),
+        );
 
         return [$statement, $values];
     }
