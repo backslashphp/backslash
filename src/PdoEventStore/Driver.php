@@ -17,17 +17,17 @@ enum Driver: string
         return match ($this) {
             self::MYSQL => [
                 'CREATE TABLE IF NOT EXISTS `event_store` (`sequence` BIGINT NOT NULL AUTO_INCREMENT, `event_uid` VARCHAR(36) NOT NULL, `event_name` varchar(255) NOT NULL, `event_payload` JSON NOT NULL CHECK (JSON_VALID(`event_payload`)), `event_metadata` JSON NOT NULL CHECK (JSON_VALID(`event_metadata`)), `event_time` varchar(255) NOT NULL, PRIMARY KEY (`sequence`), CONSTRAINT `event_uid_unique` UNIQUE KEY (`event_uid`), KEY `event_store_event_name_idx` (`event_name`), KEY `event_store_event_time_idx` (`event_time`))',
-                'CREATE TABLE IF NOT EXISTS `event_store_identifiers` (`event_uid` VARCHAR(36) NOT NULL, `name` VARCHAR(255) NOT NULL, `value` VARCHAR(255) NOT NULL, KEY `event_store_identifiers_name_value_idx` (`name`, `value`, `event_uid`))',
-                'CREATE TABLE IF NOT EXISTS `event_store_metadata` (`event_uid` VARCHAR(36) NOT NULL, `name` VARCHAR(255) NOT NULL, `value` VARCHAR(255) NOT NULL, KEY `event_store_metadata_name_value_idx` (`name`, `value`, `event_uid`))',
+                'CREATE TABLE IF NOT EXISTS `event_store_identifiers` (`event_uid` VARCHAR(36) NOT NULL, `name` VARCHAR(255) NOT NULL, `value` VARCHAR(255) NOT NULL, `sequence` BIGINT NOT NULL, KEY `event_store_identifiers_name_value_idx` (`name`, `value`, `sequence`))',
+                'CREATE TABLE IF NOT EXISTS `event_store_metadata` (`event_uid` VARCHAR(36) NOT NULL, `name` VARCHAR(255) NOT NULL, `value` VARCHAR(255) NOT NULL, `sequence` BIGINT NOT NULL, KEY `event_store_metadata_name_value_idx` (`name`, `value`, `sequence`))',
             ],
             self::SQLITE => [
                 'CREATE TABLE IF NOT EXISTS `event_store` (`sequence` INTEGER PRIMARY KEY AUTOINCREMENT, `event_uid` TEXT NOT NULL, `event_name` TEXT NOT NULL, `event_payload` TEXT NOT NULL, `event_metadata` TEXT NOT NULL, `event_time` TEXT NOT NULL, UNIQUE(`event_uid`))',
                 'CREATE INDEX IF NOT EXISTS `event_store_event_name_idx` ON `event_store` (`event_name`)',
                 'CREATE INDEX IF NOT EXISTS `event_store_event_time_idx` ON `event_store` (`event_time`)',
-                'CREATE TABLE IF NOT EXISTS `event_store_identifiers` (`event_uid` TEXT NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL)',
-                'CREATE INDEX IF NOT EXISTS `event_store_identifiers_name_value_idx` ON `event_store_identifiers` (`name`, `value`, `event_uid`)',
-                'CREATE TABLE IF NOT EXISTS `event_store_metadata` (`event_uid` TEXT NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL)',
-                'CREATE INDEX IF NOT EXISTS `event_store_metadata_name_value_idx` ON `event_store_metadata` (`name`, `value`, `event_uid`)',
+                'CREATE TABLE IF NOT EXISTS `event_store_identifiers` (`event_uid` TEXT NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL, `sequence` INTEGER NOT NULL)',
+                'CREATE INDEX IF NOT EXISTS `event_store_identifiers_name_value_idx` ON `event_store_identifiers` (`name`, `value`, `sequence`)',
+                'CREATE TABLE IF NOT EXISTS `event_store_metadata` (`event_uid` TEXT NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL, `sequence` INTEGER NOT NULL)',
+                'CREATE INDEX IF NOT EXISTS `event_store_metadata_name_value_idx` ON `event_store_metadata` (`name`, `value`, `sequence`)',
             ],
         };
     }
@@ -109,16 +109,20 @@ enum Driver: string
         }
 
         $values = [];
+        $unionSelects = [];
         foreach ($rows as [$eventUid, $name, $value]) {
+            $unionSelects[] = 'SELECT ? `col1`, ? `col2`, ? `col3`';
             $values[] = $eventUid;
             $values[] = $name;
             $values[] = $value;
         }
 
         $statement = sprintf(
-            'INSERT INTO `%s` (`event_uid`, `name`, `value`) VALUES %s',
+            'INSERT INTO `%s` (`event_uid`, `name`, `value`, `sequence`) '
+            . 'SELECT `col1`, `col2`, `col3`, (SELECT `sequence` FROM `event_store` WHERE `event_uid` = `col1`) '
+            . 'FROM (%s) `union_selects`',
             $tableName,
-            implode(', ', array_fill(0, count($rows), '(?, ?, ?)')),
+            implode(' UNION ALL ', $unionSelects),
         );
 
         return [$statement, $values];

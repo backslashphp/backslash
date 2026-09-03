@@ -132,7 +132,7 @@ final class QueryToWhereClause
     private function buildChildTableSubquery(string $tableName, string $name, array $values, bool $negative): string
     {
         return sprintf(
-            '`event_store`.`event_uid` %s (SELECT `event_uid` FROM `%s` WHERE `name` = ? AND `value` IN (%s))',
+            '`event_store`.`sequence` %s (SELECT `sequence` FROM `%s` WHERE `name` = ? AND `value` IN (%s))',
             $negative ? 'NOT IN' : 'IN',
             $tableName,
             implode(', ', array_fill(0, count($values), '?')),
