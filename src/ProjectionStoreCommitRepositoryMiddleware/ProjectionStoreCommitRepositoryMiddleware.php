@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\ProjectionStoreCommitRepositoryMiddleware;
 
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\Model\ModelInterface;
 use Backslash\ProjectionStore\ProjectionStoreInterface;
 use Backslash\Repository\MiddlewareInterface;
@@ -23,7 +23,7 @@ final class ProjectionStoreCommitRepositoryMiddleware implements MiddlewareInter
         $this->nestedLevels = 0;
     }
 
-    public function loadModel(string $modelClass, ?QueryInterface $query, RepositoryInterface $next): ModelInterface
+    public function loadModel(string $modelClass, Query $query, RepositoryInterface $next): ModelInterface
     {
         return $next->loadModel($modelClass, $query);
     }

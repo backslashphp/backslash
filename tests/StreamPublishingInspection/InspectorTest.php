@@ -11,6 +11,7 @@ use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStore;
 use Backslash\EventStore\Query\EventClass;
+use Backslash\EventStore\Query\Query;
 use Backslash\Shared\Event\CourseCreatedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
@@ -32,9 +33,9 @@ class InspectorTest extends TestCase
             RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
             RecordedEvent::create(new StudentRegisteredEvent('2', 'Bill'), new Metadata(), Clock::now()),
             RecordedEvent::create(new StudentRegisteredEvent('3', 'Mark'), new Metadata(), Clock::now()),
-        ), null, null);
+        ), new Query(), null);
 
-        $eventStore->inspect(new Inspector($eventBus, EventClass::notIn()));
+        $eventStore->inspect(new Inspector($eventBus, new Query()));
     }
 
     #[Test]
@@ -50,8 +51,8 @@ class InspectorTest extends TestCase
             RecordedEvent::create(new StudentRegisteredEvent('2', 'Bill'), new Metadata(), Clock::now()),
             RecordedEvent::create(new StudentRegisteredEvent('3', 'Mark'), new Metadata(), Clock::now()),
             RecordedEvent::create(new CourseCreatedEvent('1', 'MATH-101', 'Maths'), new Metadata(), Clock::now()),
-        ), null, null);
+        ), new Query(), null);
 
-        $eventStore->inspect(new Inspector($eventBus, EventClass::in(CourseCreatedEvent::class)));
+        $eventStore->inspect(new Inspector($eventBus, (new Query())->withItem(EventClass::in(CourseCreatedEvent::class))));
     }
 }

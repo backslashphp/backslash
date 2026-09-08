@@ -6,7 +6,7 @@ namespace Backslash\Shared\Model;
 
 use Backslash\EventStore\Query\EventClass;
 use Backslash\EventStore\Query\Identifier;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\Model\AbstractModel;
 use Backslash\Shared\Event\StudentNameChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
@@ -17,10 +17,12 @@ class StudentNameChangeModel extends AbstractModel
 
     private string $name;
 
-    public static function getQuery(string $studentId): QueryInterface
+    public static function getQuery(string $studentId): Query
     {
-        return EventClass::in(StudentRegisteredEvent::class, StudentNameChangedEvent::class)
-            ->and(Identifier::is('studentId', $studentId));
+        return (new Query())->withItem(
+            EventClass::in(StudentRegisteredEvent::class, StudentNameChangedEvent::class),
+            Identifier::is('studentId', $studentId),
+        );
     }
 
     public function changeName(string $name): void

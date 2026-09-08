@@ -129,7 +129,7 @@ $this->scenario->play(
         ->when(function (RepositoryInterface $repo): void {
             $model = $repo->loadModel(
                 Student::class,
-                Identifier::is('studentId', '1')
+                (new Query())->withItem(Identifier::is('studentId', '1'))
             );
             $model->changeName('Jane');
             $repo->storeChanges($model);
@@ -232,7 +232,7 @@ $this->scenario->play(
         ->then(function (RepositoryInterface $repo) {
             $student = $repo->loadModel(
                 Student::class,
-                Identifier::is('studentId', '1')
+                (new Query())->withItem(Identifier::is('studentId', '1'))
             );
             $this->assertEquals('John', $student->getName());
         })
@@ -458,7 +458,7 @@ public function it_updates_student_projection(): void
         new Play()
             ->given(new StudentRegisteredEvent('1', 'John'))  // NOT published
             ->when(function (RepositoryInterface $repo): void {
-                $student = $repo->loadModel(Student::class, Identifier::is('studentId', '1'));
+                $student = $repo->loadModel(Student::class, (new Query())->withItem(Identifier::is('studentId', '1')));
                 $student->changeName('Jane');
                 $repo->storeChanges($student);
             })  // WILL be published because of UpdatedProjections below

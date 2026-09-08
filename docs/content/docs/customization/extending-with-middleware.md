@@ -79,7 +79,7 @@ EventStore middleware wraps access to the storage adapter.
 use Backslash\EventStore\MiddlewareInterface;
 use Backslash\EventStore\EventStoreInterface;
 use Backslash\Event\RecordedEventStream;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 
 class StreamEnricherEventStoreMiddleware implements MiddlewareInterface
 {
@@ -90,7 +90,7 @@ class StreamEnricherEventStoreMiddleware implements MiddlewareInterface
 
     public function append(
         RecordedEventStream $stream,
-        ?QueryInterface $concurrencyCheck,
+        Query $concurrencyCheck,
         ?int $expectedSequence,
         EventStoreInterface $next
     ): void {
@@ -99,7 +99,7 @@ class StreamEnricherEventStoreMiddleware implements MiddlewareInterface
     }
 
     public function fetch(
-        ?QueryInterface $query,
+        Query $query,
         int $fromSequence,
         EventStoreInterface $next
     ): StoredRecordedEventStream {
@@ -205,7 +205,8 @@ condition in every query throughout the application:
 use Backslash\Repository\MiddlewareInterface;
 use Backslash\Repository\RepositoryInterface;
 use Backslash\Model\ModelInterface;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\EventClass;
+use Backslash\EventStore\Query\Query;
 use Backslash\EventStore\Query\Metadata;
 
 class TenantScopingRepositoryMiddleware implements MiddlewareInterface
@@ -217,11 +218,24 @@ class TenantScopingRepositoryMiddleware implements MiddlewareInterface
 
     public function loadModel(
         string $modelClass,
-        ?QueryInterface $query,
+        Query $query,
         RepositoryInterface $next
     ): ModelInterface {
-        // Add tenant filtering to query
-        $scopedQuery = $query?->and(Metadata::is('tenant_id', $this->tenantId));
+        // A query with no items matches every event; scope it down to this tenant.
+        if ($query->isMatchAll()) {
+            return $next->loadModel($modelClass, (new Query())->withItem(Metadata::is('tenant_id', $this->tenantId)));
+        }
+
+        // Otherwise, add the tenant tag to every item, preserving the OR between items
+        $scopedQuery = new Query();
+        foreach ($query->getItems() as $item) {
+            $scopedQuery = $scopedQuery->withItem(
+                EventClass::in(...$item->getEventClasses()),
+                ...$item->getIdentifiers(),
+                ...$item->getMetadata(),
+                Metadata::is('tenant_id', $this->tenantId),
+            );
+        }
         return $next->loadModel($modelClass, $scopedQuery);
     }
 

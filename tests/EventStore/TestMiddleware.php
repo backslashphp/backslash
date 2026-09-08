@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Backslash\EventStore;
 
 use Backslash\Event\RecordedEventStream;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 
 class TestMiddleware implements MiddlewareInterface
 {
@@ -19,7 +19,7 @@ class TestMiddleware implements MiddlewareInterface
         $this->output = &$output;
     }
 
-    public function fetch(?QueryInterface $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
+    public function fetch(Query $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
     {
         $this->output[] = 'before fetch ' . $this->name;
         $stream = $next->fetch($query, $fromSequence);
@@ -27,7 +27,7 @@ class TestMiddleware implements MiddlewareInterface
         return $stream;
     }
 
-    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
+    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
     {
         $this->output[] = 'before append ' . $this->name;
         $next->append($stream, $concurrencyCheck, $expectedSequence);

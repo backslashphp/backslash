@@ -10,7 +10,7 @@ use Backslash\EventNameResolver\EventNameResolverInterface;
 use Backslash\EventStore\AdapterInterface;
 use Backslash\EventStore\ConcurrencyException;
 use Backslash\EventStore\InspectorInterface;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\EventStore\StoredRecordedEventStream;
 use Backslash\Pdo\PdoInterface;
 use Backslash\Serializer\SerializerInterface;
@@ -54,7 +54,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
         }
     }
 
-    public function fetch(?QueryInterface $query, int $fromSequence = 0): StoredRecordedEventStream
+    public function fetch(Query $query, int $fromSequence = 0): StoredRecordedEventStream
     {
         $whereClause = new QueryToWhereClause($query, $this->eventNameResolver);
         $sql = $this->driver->buildSelectStatement($fromSequence, $whereClause);
@@ -70,7 +70,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
         return $stream;
     }
 
-    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence): void
+    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence): void
     {
         if (!count($stream)) {
             return;

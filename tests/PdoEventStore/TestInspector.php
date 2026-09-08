@@ -6,21 +6,21 @@ namespace Backslash\PdoEventStore;
 
 use Backslash\Event\RecordedEvent;
 use Backslash\EventStore\InspectorInterface;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 
 class TestInspector implements InspectorInterface
 {
     /** @var RecordedEvent[] */
     private array $inspectedEvents = [];
 
-    private ?QueryInterface $query;
+    private Query $query;
 
-    public function __construct(?QueryInterface $query)
+    public function __construct(Query $query)
     {
         $this->query = $query;
     }
 
-    public function getQuery(): ?QueryInterface
+    public function getQuery(): Query
     {
         return $this->query;
     }

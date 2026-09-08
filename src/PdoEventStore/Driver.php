@@ -7,7 +7,7 @@ namespace Backslash\PdoEventStore;
 use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\EventNameResolver\EventNameResolverInterface;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\Serializer\SerializerInterface;
 
 enum Driver: string
@@ -48,7 +48,7 @@ enum Driver: string
 
     public function buildInsertStatementsAndValues(
         RecordedEventStream $stream,
-        ?QueryInterface $concurrencyCheck,
+        Query $concurrencyCheck,
         ?int $expectedSequence,
         EventNameResolverInterface $eventNameResolver,
         SerializerInterface $eventSerializer,

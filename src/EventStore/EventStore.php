@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Backslash\EventStore;
 
 use Backslash\Event\RecordedEventStream;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 
 final class EventStore implements EventStoreInterface
 {
@@ -46,13 +46,13 @@ final class EventStore implements EventStoreInterface
         return $this->middlewares;
     }
 
-    public function fetch(?QueryInterface $query, int $fromSequence = 0): StoredRecordedEventStream
+    public function fetch(Query $query, int $fromSequence = 0): StoredRecordedEventStream
     {
         return $this->chain->fetch($query, $fromSequence);
     }
 
     /** @throws ConcurrencyException */
-    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence): void
+    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence): void
     {
         $this->chain->append($stream, $concurrencyCheck, $expectedSequence);
     }

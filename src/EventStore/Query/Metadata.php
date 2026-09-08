@@ -4,41 +4,21 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore\Query;
 
-final class Metadata implements QueryInterface
+final class Metadata
 {
-    use SubqueriesTrait;
-
     private string $name;
 
-    private array $values;
+    private string $value;
 
-    private bool $negative;
-
-    private function __construct(string $name, bool $negative, string ...$values)
+    private function __construct(string $name, string $value)
     {
         $this->name = $name;
-        $this->negative = $negative;
-        $this->values = $values;
+        $this->value = $value;
     }
 
-    public static function is(string $name, string $value): QueryInterface
+    public static function is(string $name, string $value): self
     {
-        return new self($name, false, $value);
-    }
-
-    public static function isNot(string $name, string $value): QueryInterface
-    {
-        return new self($name, true, $value);
-    }
-
-    public static function in(string $name, string ...$values): QueryInterface
-    {
-        return new self($name, false, ...$values);
-    }
-
-    public static function notIn(string $name, string ...$values): QueryInterface
-    {
-        return new self($name, true, ...$values);
+        return new self($name, $value);
     }
 
     public function getName(): string
@@ -46,13 +26,8 @@ final class Metadata implements QueryInterface
         return $this->name;
     }
 
-    public function getValues(): array
+    public function getValue(): string
     {
-        return $this->values;
-    }
-
-    public function isNegative(): bool
-    {
-        return $this->negative;
+        return $this->value;
     }
 }

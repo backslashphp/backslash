@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Backslash\EventStoreReductionInspection;
 
 use Backslash\Event\RecordedEvent;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 
 class TestReducer implements ReductionInspectorInterface
 {
     private int $eventCount = 0;
 
-    public function getQuery(): ?QueryInterface
+    public function getQuery(): Query
     {
-        return null;
+        return new Query();
     }
 
     public function inspect(RecordedEvent $recordedEvent): void

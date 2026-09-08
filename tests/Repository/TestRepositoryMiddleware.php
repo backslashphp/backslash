@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\Repository;
 
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\Model\ModelInterface;
 
 class TestRepositoryMiddleware implements MiddlewareInterface
@@ -19,7 +19,7 @@ class TestRepositoryMiddleware implements MiddlewareInterface
         $this->output = &$output;
     }
 
-    public function loadModel(string $modelClass, ?QueryInterface $query, RepositoryInterface $next): ModelInterface
+    public function loadModel(string $modelClass, Query $query, RepositoryInterface $next): ModelInterface
     {
         $this->output[] = 'before ' . $this->name;
         $model = $next->loadModel($modelClass, $query);

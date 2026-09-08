@@ -4,46 +4,21 @@ declare(strict_types=1);
 
 namespace Backslash\EventStore\Query;
 
-final class Identifier implements QueryInterface
+final class Identifier
 {
-    use SubqueriesTrait;
-
     private string $name;
 
-    private array $values;
+    private string|int $value;
 
-    private bool $negative;
-
-    private function __construct(string $name, bool $negative, string|int ...$values)
+    private function __construct(string $name, string|int $value)
     {
         $this->name = $name;
-        $this->negative = $negative;
-        $this->values = $values;
+        $this->value = $value;
     }
 
-    public static function is(string $name, string|int $value): QueryInterface
+    public static function is(string $name, string|int $value): self
     {
-        return new self($name, false, $value);
-    }
-
-    public static function isNot(string $name, string|int $value): QueryInterface
-    {
-        return new self($name, true, $value);
-    }
-
-    public static function includes(string $name, string|int $value): QueryInterface
-    {
-        return self::in($name, $value);
-    }
-
-    public static function in(string $name, string|int ...$values): QueryInterface
-    {
-        return new self($name, false, ...$values);
-    }
-
-    public static function notIn(string $name, string|int ...$values): QueryInterface
-    {
-        return new self($name, true, ...$values);
+        return new self($name, $value);
     }
 
     public function getName(): string
@@ -51,13 +26,8 @@ final class Identifier implements QueryInterface
         return $this->name;
     }
 
-    public function getValues(): array
+    public function getValue(): string|int
     {
-        return $this->values;
-    }
-
-    public function isNegative(): bool
-    {
-        return $this->negative;
+        return $this->value;
     }
 }

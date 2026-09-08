@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\Repository;
 
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\Model\ModelInterface;
 
 final class MiddlewareDelegator implements RepositoryInterface
@@ -19,7 +19,7 @@ final class MiddlewareDelegator implements RepositoryInterface
         $this->next = $next;
     }
 
-    public function loadModel(string $modelClass, ?QueryInterface $query): ModelInterface
+    public function loadModel(string $modelClass, Query $query): ModelInterface
     {
         return $this->middleware->loadModel($modelClass, $query, $this->next);
     }

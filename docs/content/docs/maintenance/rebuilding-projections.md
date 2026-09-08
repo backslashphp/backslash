@@ -79,6 +79,7 @@ events relevant to that projector:
 ```php
 use Backslash\StreamPublishingInspection\Inspector;
 use Backslash\EventStore\Query\EventClass;
+use Backslash\EventStore\Query\Query;
 
 // Define which events the projector needs
 $relevantEvents = [
@@ -88,15 +89,16 @@ $relevantEvents = [
 ];
 
 // Create a query filtering for these events only
-$query = EventClass::in($relevantEvents);
+$query = (new Query())->withItem(EventClass::in(...$relevantEvents));
 
 // Inspector will only replay these specific events
 $inspector = new Inspector($eventBus, $query);
 $eventStore->inspect($inspector);
 ```
 
-Without a query parameter, the `Inspector` replays all events in the EventStore. When rebuilding all projections, omit
-the query; when rebuilding specific projections, use `EventClass::in()` to filter for only the necessary events.
+Without a query parameter, the `Inspector` replays all events in the EventStore (equivalent to a plain `new Query()`,
+where `isMatchAll()` is `true`). When rebuilding all projections, omit the query; when rebuilding specific projections,
+use `EventClass::in()` to filter for only the necessary events.
 
 ## Tracking rebuild progress
 
@@ -328,6 +330,7 @@ The worker script can then call this method to determine which events to load:
 
 ```php
 use Backslash\EventStore\Query\EventClass;
+use Backslash\EventStore\Query\Query;
 use Backslash\StreamPublishingInspection\Inspector;
 
 // Worker receives projector class name as argument
@@ -337,7 +340,7 @@ $projectorClass = $argv[1]; // e.g., CourseListProjector::class
 $eventClasses = $projectorClass::getSubscribedEvents();
 
 // Create query to filter for relevant events only
-$query = EventClass::in($eventClasses);
+$query = (new Query())->withItem(EventClass::in(...$eventClasses));
 
 // Create and register projector
 $eventBus = new EventBus();

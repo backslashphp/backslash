@@ -9,6 +9,7 @@ use Backslash\Event\Metadata;
 use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\EventStore\EventStore;
+use Backslash\EventStore\Query\Query;
 use Backslash\Shared\Event\CourseCreatedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
@@ -24,7 +25,7 @@ class ReductionTest extends TestCase
         $eventStore->append(new RecordedEventStream(
             RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
             RecordedEvent::create(new CourseCreatedEvent('A', 'FR101', 'French 101'), new Metadata(), Clock::now()),
-        ), null, null);
+        ), new Query(), null);
         $reduction = new EventStoreReductionInspection($eventStore->getAdapter());
 
         $this->assertEquals(2, $reduction->inspect(new TestReducer()));

@@ -8,13 +8,13 @@ use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\InspectorInterface;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 
 final class Inspector implements InspectorInterface
 {
     private EventBusInterface $eventBus;
 
-    private ?QueryInterface $query;
+    private Query $query;
 
     /** @var ?callable */
     private $before;
@@ -22,15 +22,15 @@ final class Inspector implements InspectorInterface
     /** @var ?callable */
     private $after;
 
-    public function __construct(EventBusInterface $eventBus, ?QueryInterface $query = null, ?callable $before = null, ?callable $after = null)
+    public function __construct(EventBusInterface $eventBus, ?Query $query = null, ?callable $before = null, ?callable $after = null)
     {
         $this->eventBus = $eventBus;
-        $this->query = $query;
+        $this->query = $query ?? new Query();
         $this->before = $before;
         $this->after = $after;
     }
 
-    public function getQuery(): ?QueryInterface
+    public function getQuery(): Query
     {
         return $this->query;
     }

@@ -137,11 +137,15 @@ class NotificationHandler implements EventHandlerInterface
 Queries can also filter events based on enriched metadata:
 
 ```php
+use Backslash\EventStore\Query\EventClass;
 use Backslash\EventStore\Query\Metadata;
+use Backslash\EventStore\Query\Query;
 
 // Load only events for specific tenant
-$query = EventClass::is(CourseDefinedEvent::class)
-    ->and(Metadata::is('tenant_id', $currentTenantId));
+$query = (new Query())->withItem(
+    EventClass::in(CourseDefinedEvent::class),
+    Metadata::is('tenant_id', $currentTenantId),
+);
 ```
 
 ## Best practices

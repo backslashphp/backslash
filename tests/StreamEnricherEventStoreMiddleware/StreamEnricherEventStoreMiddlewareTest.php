@@ -12,7 +12,7 @@ use Backslash\EventStore\EventStore;
 use Backslash\EventStore\EventStoreInterface;
 use Backslash\EventStore\InspectorInterface;
 use Backslash\EventStore\MiddlewareInterface;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\EventStore\StoredRecordedEventStream;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\PdoEventStore\InMemorySqlitePdoEventStoreFactory;
@@ -29,12 +29,12 @@ class StreamEnricherEventStoreMiddlewareTest extends TestCase
         $mw = new class () implements MiddlewareInterface {
             public ?Metadata $metadata = null;
 
-            public function fetch(?QueryInterface $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
+            public function fetch(Query $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
             {
                 return $next->fetch($query, $fromSequence);
             }
 
-            public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
+            public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
             {
                 $this->metadata = $stream->getRecordedEvents()[0]->getMetadata();
                 $next->append($stream, $concurrencyCheck, $expectedSequence);
@@ -59,7 +59,7 @@ class StreamEnricherEventStoreMiddlewareTest extends TestCase
             RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
         );
 
-        $store->append($stream, null, null);
+        $store->append($stream, new Query(), null);
 
         $this->assertEquals($mw->metadata->toArray(), ['foo' => 'bar']);
     }

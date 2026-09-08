@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Backslash\EventStore;
 
 use Backslash\Event\RecordedEventStream;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 
 interface MiddlewareInterface
 {
-    public function fetch(?QueryInterface $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream;
+    public function fetch(Query $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream;
 
-    public function append(RecordedEventStream $stream, ?QueryInterface $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void;
+    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void;
 
     public function inspect(InspectorInterface $inspector, EventStoreInterface $next): void;
 

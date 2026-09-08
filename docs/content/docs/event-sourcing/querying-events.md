@@ -12,20 +12,28 @@ re-executed to verify that no other process has added events to the stream in th
 
 ## Understanding queries
 
-Queries implement `QueryInterface` and describe which events to fetch based on event class and identifiers.
+Queries are built with the `Query` class and describe which events to fetch based on event class and identifiers. This
+follows the [Dynamic Consistency Boundary](https://dcb.events/specification/#query) specification: a `Query` is a set of
+items combined with **OR**, and within a single item, event classes are combined with **OR** while identifiers are
+combined with **AND**.
 
 Here are some basic query examples:
 
 ```php
 // Load all events of a specific type
-EventClass::is(StudentRegisteredEvent::class)
+(new Query())->withItem(EventClass::in(StudentRegisteredEvent::class))
 
 // Load events for a specific entity
-Identifier::is('studentId', 'student-123')
+(new Query())->withItem(Identifier::is('studentId', 'student-123'))
 
-// Combine filters
-EventClass::is(StudentRegisteredEvent::class)
-    ->and(Identifier::is('studentId', 'student-123'))
+// Combine filters (AND, within the same item)
+(new Query())->withItem(
+    EventClass::in(StudentRegisteredEvent::class),
+    Identifier::is('studentId', 'student-123'),
+)
+
+// Load every event
+new Query()
 ```
 
 The demo includes a static method on each Model to build its query. This is a convenient convention but not required by
@@ -34,12 +42,15 @@ Backslash; queries can be created anywhere in your application.
 Here's a simple case for `CourseCapacityModel`:
 
 ```php
-public static function buildQuery(string $courseId): QueryInterface
+public static function buildQuery(string $courseId): Query
 {
-    return EventClass::in(
-        CourseCapacityChangedEvent::class,
-        CourseDefinedEvent::class,
-    )->and(Identifier::is('courseId', $courseId));
+    return (new Query())->withItem(
+        EventClass::in(
+            CourseCapacityChangedEvent::class,
+            CourseDefinedEvent::class,
+        ),
+        Identifier::is('courseId', $courseId),
+    );
 }
 ```
 
@@ -47,53 +58,55 @@ This query loads events related to a single course's capacity.
 
 ## Building queries with EventClass and Identifier
 
-Queries combine event class filters with identifier filters:
+A `->withItem(...)` call builds a single item; every filter passed to it applies to that same item. A `Query` with no
+items at all (`new Query()` left as-is) matches every event; `->isMatchAll(): bool` tells you whether that's the case.
 
 **EventClass filters:**
 
-- `EventClass::is(EventClass::class)` - Single event type
-- `EventClass::in(Event1::class, Event2::class)` - Multiple event types
+- `EventClass::in(Event1::class, Event2::class)` - One or more event types, combined with OR
 
 **Identifier filters:**
 
 - `Identifier::is('key', 'value')` - Exact identifier match
-- Multiple identifiers can be combined
+- Multiple identifiers passed to the same `->withItem(...)` call are combined with AND
 
-**Combining filters:**
+**Combining items:**
 
-- `->and()` - Both conditions must match
-- `->or()` - Either condition must match
+- `->withItem(...)` - Adds another item to the query; an event matching any item is loaded
 
 ## Building multi-entity queries
 
 The `CourseSubscriptionModel` demonstrates a more complex query spanning multiple entities:
 
 ```php
-public static function buildQuery(string $studentId, string $courseId): QueryInterface
+public static function buildQuery(string $studentId, string $courseId): Query
 {
-    $eventForThisCourseLifecycle = EventClass::in(
-        CourseCapacityChangedEvent::class,
-        CourseDefinedEvent::class,
-    )->and(Identifier::is('courseId', $courseId));
-
-    $eventsForThisStudentLifecycle = EventClass::is(
-        StudentRegisteredEvent::class,
-    )->and(Identifier::is('studentId', $studentId));
-
-    $eventsForThisStudentSubscriptions = EventClass::in(
-        StudentUnsubscribedFromCourseEvent::class,
-        StudentSubscribedToCourseEvent::class,
-    )->and(Identifier::is('studentId', $studentId));
-
-    $eventsForSubscriptionsToThisCourse = EventClass::in(
-        StudentSubscribedToCourseEvent::class,
-        StudentUnsubscribedFromCourseEvent::class,
-    )->and(Identifier::is('courseId', $courseId));
-
-    return $eventForThisCourseLifecycle
-        ->or($eventsForThisStudentLifecycle)
-        ->or($eventsForThisStudentSubscriptions)
-        ->or($eventsForSubscriptionsToThisCourse);
+    return (new Query())
+        ->withItem(
+            EventClass::in(
+                CourseCapacityChangedEvent::class,
+                CourseDefinedEvent::class,
+            ),
+            Identifier::is('courseId', $courseId),
+        )
+        ->withItem(
+            EventClass::in(StudentRegisteredEvent::class),
+            Identifier::is('studentId', $studentId),
+        )
+        ->withItem(
+            EventClass::in(
+                StudentUnsubscribedFromCourseEvent::class,
+                StudentSubscribedToCourseEvent::class,
+            ),
+            Identifier::is('studentId', $studentId),
+        )
+        ->withItem(
+            EventClass::in(
+                StudentSubscribedToCourseEvent::class,
+                StudentUnsubscribedFromCourseEvent::class,
+            ),
+            Identifier::is('courseId', $courseId),
+        );
 }
 ```
 

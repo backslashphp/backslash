@@ -5,18 +5,11 @@ declare(strict_types=1);
 namespace Backslash\PdoEventStore;
 
 use Backslash\EventNameResolver\EventNameResolverInterface;
-use Backslash\EventStore\Query\EventClass;
-use Backslash\EventStore\Query\EventTime;
-use Backslash\EventStore\Query\Identifier;
-use Backslash\EventStore\Query\LogicOperator;
-use Backslash\EventStore\Query\Metadata;
-use Backslash\EventStore\Query\QueryInterface;
-use Backslash\EventStore\Query\Sequence;
-use LogicException;
+use Backslash\EventStore\Query\Query;
 
 final class QueryToWhereClause
 {
-    private ?QueryInterface $query;
+    private Query $query;
 
     private EventNameResolverInterface $eventNameResolver;
 
@@ -27,7 +20,7 @@ final class QueryToWhereClause
     private bool $resolved = false;
 
     public function __construct(
-        ?QueryInterface $query,
+        Query $query,
         EventNameResolverInterface $eventNameResolver,
     ) {
         $this->query = $query;
@@ -54,88 +47,48 @@ final class QueryToWhereClause
     {
         $this->resolved = true;
 
-        if (!$this->query) {
+        if ($this->query->isMatchAll()) {
             $this->statement = '1=1';
             return;
         }
 
-        $query = $this->query;
-        switch ($query::class) {
-            case (EventClass::class):
+        $itemStatements = [];
+        foreach ($this->query->getItems() as $item) {
+            $conditions = [];
+
+            if (count($item->getEventClasses())) {
                 $eventNames = array_map(
-                    fn ($item) => $this->eventNameResolver->resolveName((string) $item),
-                    $query->getValues(),
+                    fn ($eventClass) => $this->eventNameResolver->resolveName($eventClass),
+                    $item->getEventClasses(),
                 );
-                /** @var EventClass $query */
-                $statement = sprintf(
-                    '`event_name` %s (%s)',
-                    $query->isNegative() ? 'NOT IN' : 'IN',
+                $conditions[] = sprintf(
+                    '`event_name` IN (%s)',
                     implode(', ', array_fill(0, count($eventNames), '?')),
                 );
                 $this->values = array_merge($this->values, $eventNames);
-                break;
-            case (Identifier::class):
-                /** @var Identifier $query */
-                $statement = $this->buildChildTableSubquery(
-                    'event_store_identifiers',
-                    $query->getName(),
-                    $query->getValues(),
-                    $query->isNegative(),
-                );
-                $this->values = array_merge($this->values, [$query->getName()], $query->getValues());
-                break;
-            case (Metadata::class):
-                /** @var Metadata $query */
-                $statement = $this->buildChildTableSubquery(
-                    'event_store_metadata',
-                    $query->getName(),
-                    $query->getValues(),
-                    $query->isNegative(),
-                );
-                $this->values = array_merge($this->values, [$query->getName()], $query->getValues());
-                break;
-            case (Sequence::class):
-                /** @var Sequence $query */
-                $statement = sprintf(
-                    '`sequence` %s',
-                    match (true) {
-                        $query->getMin() && $query->getMax() => sprintf('BETWEEN %d AND %d', $query->getMin(), $query->getMax()),
-                        $query->getMin() && !$query->getMax() => sprintf('>= %d', $query->getMin()),
-                        !$query->getMin() && $query->getMax() => sprintf('<= %d', $query->getMax()),
-                    },
-                );
-                break;
-            case (EventTime::class):
-                /** @var EventTime $query */
-                $statement = sprintf(
-                    '`event_time` %s ?',
-                    $query->isAfter() ? '>=' : '<=',
-                );
-                $this->values = array_merge($this->values, [$query->getDateTime()->format('Y-m-d\TH:i:s.uP')]);
-                break;
-            default:
-                throw new LogicException(sprintf('Unsupported query type: %s', $query::class));
+            }
+
+            foreach ($item->getIdentifiers() as $identifier) {
+                $conditions[] = $this->buildChildTableSubquery('event_store_identifiers');
+                $this->values = array_merge($this->values, [$identifier->getName(), $identifier->getValue()]);
+            }
+
+            foreach ($item->getMetadata() as $metadata) {
+                $conditions[] = $this->buildChildTableSubquery('event_store_metadata');
+                $this->values = array_merge($this->values, [$metadata->getName(), $metadata->getValue()]);
+            }
+
+            $itemStatements[] = count($conditions) ? implode(' AND ', $conditions) : '1=1';
         }
 
-        if (count($this->query->getSubqueries())) {
-            /** @var LogicOperator $operator */
-            /** @var QueryInterface $subquery */
-            foreach ($this->query->getSubqueries() as [$operator, $subquery]) {
-                $where = new self($subquery, $this->eventNameResolver);
-                $this->values = array_merge($this->values, $where->getValues());
-                $statement .= sprintf(' %s (%s)', $operator->value, $where->getStatement());
-            }
-        }
-        $this->statement = $statement;
+        $this->statement = implode(' OR ', array_map(fn ($statement) => sprintf('(%s)', $statement), $itemStatements));
     }
 
-    private function buildChildTableSubquery(string $tableName, string $name, array $values, bool $negative): string
+    private function buildChildTableSubquery(string $tableName): string
     {
         return sprintf(
-            '`event_store`.`event_uid` %s (SELECT `event_uid` FROM `%s` WHERE `name` = ? AND `value` IN (%s))',
-            $negative ? 'NOT IN' : 'IN',
+            '`event_store`.`event_uid` IN (SELECT `event_uid` FROM `%s` WHERE `name` = ? AND `value` = ?)',
             $tableName,
-            implode(', ', array_fill(0, count($values), '?')),
         );
     }
 }

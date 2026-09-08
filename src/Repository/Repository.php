@@ -6,7 +6,7 @@ namespace Backslash\Repository;
 
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStoreInterface;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\Model\ModelInterface;
 
 final class Repository implements RepositoryInterface
@@ -25,7 +25,7 @@ final class Repository implements RepositoryInterface
         $this->chainMiddlewares();
     }
 
-    public function loadModel(string $modelClass, ?QueryInterface $query): ModelInterface
+    public function loadModel(string $modelClass, Query $query): ModelInterface
     {
         return $this->chain->loadModel($modelClass, $query);
     }

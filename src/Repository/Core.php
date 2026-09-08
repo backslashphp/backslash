@@ -6,7 +6,7 @@ namespace Backslash\Repository;
 
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStoreInterface;
-use Backslash\EventStore\Query\QueryInterface;
+use Backslash\EventStore\Query\Query;
 use Backslash\Model\ModelInterface;
 use RuntimeException;
 
@@ -24,7 +24,7 @@ final class Core implements RepositoryInterface
         $this->eventBus = $eventBus;
     }
 
-    public function loadModel(string $modelClass, ?QueryInterface $query): ModelInterface
+    public function loadModel(string $modelClass, Query $query): ModelInterface
     {
         $storedEvents = $this->eventStore->fetch($query);
         /** @var ModelInterface $model */
