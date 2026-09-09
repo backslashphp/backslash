@@ -87,7 +87,7 @@ final class QueryToWhereClause
     private function buildChildTableSubquery(string $tableName): string
     {
         return sprintf(
-            '`event_store`.`event_uid` IN (SELECT `event_uid` FROM `%s` WHERE `name` = ? AND `value` = ?)',
+            '`event_store`.`sequence` IN (SELECT `sequence` FROM `%s` WHERE `name` = ? AND `value` = ?)',
             $tableName,
         );
     }
