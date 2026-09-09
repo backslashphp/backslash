@@ -16,6 +16,7 @@
         "psr/clock": "*"
     },
     "require-dev": {
+        "ext-curl": "*",
         "ext-pdo_sqlite": "*",
         "friendsofphp/php-cs-fixer": "^3",
         "phpunit/phpunit": "^12",
@@ -25,6 +26,7 @@
         "vimeo/psalm": "^6"
     },
     "suggest": {
+        "ext-curl": "Required to use TamarackDbEventStoreAdapter",
         "phpunit/phpunit": "PHPUnit is required by Scenario component"
     },
     "autoload": {
