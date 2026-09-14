@@ -44,13 +44,6 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
         $this->eventSerializer = $eventSerializer;
     }
 
-    public function __destruct()
-    {
-        if ($this->curlHandle !== null) {
-            curl_close($this->curlHandle);
-        }
-    }
-
     public function fetch(Query $query, int $fromSequence = 0): StoredRecordedEventStream
     {
         $stream = new StoredRecordedEventStream();
