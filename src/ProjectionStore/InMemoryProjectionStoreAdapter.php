@@ -33,6 +33,11 @@ final class InMemoryProjectionStoreAdapter implements AdapterInterface
         return isset($this->projections[$class][$id]);
     }
 
+    public function removeBy(string $class): void
+    {
+        unset($this->projections[$class]);
+    }
+
     public function commit(UnitOfWork $unit): void
     {
         foreach ($unit->getStored() as $projection) {

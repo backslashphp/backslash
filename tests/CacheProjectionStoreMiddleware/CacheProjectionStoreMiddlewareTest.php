@@ -37,4 +37,22 @@ class CacheProjectionStoreMiddlewareTest extends TestCase
         $store->has('345', TestProjection::class);
         $this->assertEquals(2, $adapter->getHits());
     }
+
+    #[Test]
+    public function it_clears_cached_entries_of_the_removed_class(): void
+    {
+        $adapter = new TestProjectionStoreAdapter();
+        $store = new ProjectionStore($adapter);
+        $store->addMiddleware(new CacheProjectionStoreMiddleware());
+
+        $store->store(new TestProjection('123'));
+        $store->commit();
+        $store->find('123', TestProjection::class);
+
+        $store->removeBy(TestProjection::class);
+
+        $adapter->reset();
+        $store->has('123', TestProjection::class);
+        $this->assertEquals(1, $adapter->getHits());
+    }
 }

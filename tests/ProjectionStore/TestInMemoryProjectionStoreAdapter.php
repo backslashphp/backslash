@@ -44,6 +44,11 @@ class TestInMemoryProjectionStoreAdapter implements AdapterInterface
         return $this->adapter->has($id, $class);
     }
 
+    public function removeBy(string $class): void
+    {
+        $this->adapter->removeBy($class);
+    }
+
     public function purge(): void
     {
         $this->adapter->purge();

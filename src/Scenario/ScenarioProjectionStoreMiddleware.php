@@ -41,6 +41,18 @@ final class ScenarioProjectionStoreMiddleware implements MiddlewareInterface
         $next->remove($id, $class);
     }
 
+    public function removeBy(string $class, ProjectionStoreInterface $next): void
+    {
+        if ($this->tracing) {
+            foreach ($this->trace as $key => $projection) {
+                if ($projection::class === $class) {
+                    unset($this->trace[$key]);
+                }
+            }
+        }
+        $next->removeBy($class);
+    }
+
     public function purge(ProjectionStoreInterface $next): void
     {
         $next->purge();

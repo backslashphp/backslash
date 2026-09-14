@@ -64,6 +64,11 @@ final class ProjectionStore implements ProjectionStoreInterface
         $this->chain->remove($id, $class);
     }
 
+    public function removeBy(string $class): void
+    {
+        $this->chain->removeBy($class);
+    }
+
     public function commit(): void
     {
         $this->chain->commit();

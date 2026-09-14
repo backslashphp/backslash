@@ -38,6 +38,11 @@ final class MiddlewareDelegator implements ProjectionStoreInterface
         $this->middleware->remove($id, $class, $this->next);
     }
 
+    public function removeBy(string $class): void
+    {
+        $this->middleware->removeBy($class, $this->next);
+    }
+
     public function purge(): void
     {
         $this->middleware->purge($this->next);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\ProjectionStore;
 
+use Backslash\Shared\Projection\TestBarProjection;
 use Backslash\Shared\Projection\TestFooProjection;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -32,5 +33,22 @@ class InMemoryProjectionStoreTest extends TestCase
         $store->commit();
 
         $this->assertCount(3, iterator_to_array($store->getAdapter()->findBy(TestFooProjection::class)));
+    }
+
+    #[Test]
+    public function it_removes_projections_by_class(): void
+    {
+        $store = new ProjectionStore(new InMemoryProjectionStoreAdapter());
+
+        $store->store(new TestFooProjection('123'));
+        $store->store(new TestFooProjection('234'));
+        $store->store(new TestBarProjection('345'));
+        $store->commit();
+
+        $store->removeBy(TestFooProjection::class);
+
+        $this->assertFalse($store->has('123', TestFooProjection::class));
+        $this->assertFalse($store->has('234', TestFooProjection::class));
+        $this->assertTrue($store->has('345', TestBarProjection::class));
     }
 }

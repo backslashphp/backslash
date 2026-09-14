@@ -16,6 +16,8 @@ interface AdapterInterface
 
     public function has(string $id, string $class): bool;
 
+    public function removeBy(string $class): void;
+
     public function commit(UnitOfWork $unit): void;
 
     public function purge(): void;

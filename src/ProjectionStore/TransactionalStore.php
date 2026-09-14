@@ -55,6 +55,11 @@ final class TransactionalStore implements ProjectionStoreInterface
         $this->unit->remove($id, $class);
     }
 
+    public function removeBy(string $class): void
+    {
+        $this->adapter->removeBy($class);
+    }
+
     public function purge(): void
     {
         $this->adapter->purge();

@@ -42,6 +42,24 @@ class ScenarioProjectionStoreMiddlewareTest extends TestCase
     }
 
     #[Test]
+    public function it_removes_traced_projections_of_the_removed_class(): void
+    {
+        $trace = new ScenarioProjectionStoreMiddleware();
+        $trace->startTracing();
+
+        $store = new ProjectionStore(new InMemoryProjectionStoreAdapter());
+        $store->addMiddleware($trace);
+        $projection = $this->createProjection();
+        $store->store($projection);
+
+        $this->assertCount(1, $trace->getTracedProjections());
+
+        $store->removeBy($projection::class);
+
+        $this->assertEmpty($trace->getTracedProjections());
+    }
+
+    #[Test]
     public function it_starts_and_stops_tracing(): void
     {
         $trace = new ScenarioProjectionStoreMiddleware();

@@ -76,6 +76,20 @@ class MiddlewareTest extends TestCase
         );
         $output = [];
 
+        $store->removeBy(TestFooProjection::class);
+        $this->assertEquals(
+            $output,
+            [
+                'before removeBy mw3',
+                'before removeBy mw2',
+                'before removeBy mw1',
+                'after removeBy mw1',
+                'after removeBy mw2',
+                'after removeBy mw3',
+            ],
+        );
+        $output = [];
+
         $store->purge();
         $this->assertEquals(
             $output,

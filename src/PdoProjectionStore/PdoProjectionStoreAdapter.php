@@ -94,6 +94,20 @@ final class PdoProjectionStoreAdapter implements AdapterInterface
         return count($rows) > 0;
     }
 
+    public function removeBy(string $class): void
+    {
+        $sql = 'delete from projection_store where projection_class = :projectionClass';
+        $query = $this->pdo->prepare($sql);
+        $success = $query->execute(
+            [
+                ':projectionClass' => $class,
+            ],
+        );
+        if (!$success) {
+            throw new RuntimeException();
+        }
+    }
+
     public function commit(UnitOfWork $unit): void
     {
         foreach ($unit->getStored() as $projection) {

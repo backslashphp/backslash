@@ -48,6 +48,16 @@ final class CacheProjectionStoreMiddleware implements MiddlewareInterface
         unset($this->cache[$key]);
     }
 
+    public function removeBy(string $class, ProjectionStoreInterface $next): void
+    {
+        $next->removeBy($class);
+        foreach ($this->cache as $key => $projection) {
+            if ($projection::class === $class) {
+                unset($this->cache[$key]);
+            }
+        }
+    }
+
     public function purge(ProjectionStoreInterface $next): void
     {
         $next->purge();

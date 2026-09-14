@@ -15,8 +15,9 @@ interface ProjectionStoreInterface
 
     public function store(ProjectionInterface $projection): void;
 
-    /** @throws ProjectionNotFoundException */
     public function remove(string $id, string $class): void;
+
+    public function removeBy(string $class): void;
 
     public function purge(): void;
 

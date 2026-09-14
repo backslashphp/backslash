@@ -48,6 +48,13 @@ class TestMiddleware implements MiddlewareInterface
         $this->output[] = 'after remove ' . $this->name;
     }
 
+    public function removeBy(string $class, ProjectionStoreInterface $next): void
+    {
+        $this->output[] = 'before removeBy ' . $this->name;
+        $next->removeBy($class);
+        $this->output[] = 'after removeBy ' . $this->name;
+    }
+
     public function purge(ProjectionStoreInterface $next): void
     {
         $this->output[] = 'before purge ' . $this->name;
