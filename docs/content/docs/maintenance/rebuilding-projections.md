@@ -137,7 +137,8 @@ logging rebuild metrics.
 Rebuilding follows these steps:
 
 1. **Bootstrap the application** with only projectors registered; exclude all processors to prevent side effects
-2. **Delete existing projections** by calling `purge()` on the `ProjectionStore`
+2. **Delete existing projections** by calling `purge()` on the `ProjectionStore`; when rebuilding a single projection
+   type, call `purgeBy(ProjectionClass::class)` instead to delete only that projection's instances
 3. **Disable stream enricher** if your application uses one; metadata enrichment must not occur during replays
 4. **Load all events chronologically** from the EventStore and publish them to the EventBus using Inspector
 5. **Commit rebuilt projections** by calling `commit()` on the ProjectionStore
@@ -386,7 +387,9 @@ rebuilds during low-traffic periods to minimize impact.
 issues early; consider logging after every N events processed.
 
 **Use selective rebuilds when possible.** Rebuild only affected projections rather than all projections to save time and
-resources; create temporary EventBus instances with only the necessary projectors.
+resources; create temporary EventBus instances with only the necessary projectors, and call
+`$projectionStore->purgeBy(ProjectionClass::class)` to delete only the instances of that projection instead of calling
+`purge()`.
 
 **Consider parallel rebuilds for scale.** As your event store grows, parallel rebuilds become increasingly valuable for
 reducing rebuild time and resource consumption.

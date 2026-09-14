@@ -484,6 +484,9 @@ $exists = $projectionStore->has($id, ProjectionClass::class);
 // Remove
 $projectionStore->remove($id, ProjectionClass::class);
 
+// Remove every instance of a projection class (immediate, bypasses the unit of work)
+$projectionStore->purgeBy(ProjectionClass::class);
+
 // Transaction
 $projectionStore->commit();
 $projectionStore->rollback();
