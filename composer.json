@@ -12,14 +12,14 @@
     ],
     "require": {
         "php": "^8.2",
+        "ext-curl": "*",
         "ext-pdo": "*",
+        "ext-pdo_sqlite": "*",
         "psr/clock": "*"
     },
     "require-dev": {
-        "ext-curl": "*",
-        "ext-pdo_sqlite": "*",
         "friendsofphp/php-cs-fixer": "^3",
-        "phpunit/phpunit": "^12",
+        "phpunit/phpunit": "^13",
         "psr/container": "^2",
         "ramsey/uuid": "^4",
         "squizlabs/php_codesniffer": "^3",

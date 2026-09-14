@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Backslash\TamarackDbEventStore;
 
+use Backslash\Event\Metadata;
 use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\EventNameResolver\EventNameResolverInterface;
@@ -13,12 +14,13 @@ use Backslash\EventStore\InspectorInterface;
 use Backslash\EventStore\Query\Query;
 use Backslash\EventStore\StoredRecordedEventStream;
 use Backslash\Serializer\SerializerInterface;
+use CurlHandle;
 use DateTimeImmutable;
 use Generator;
 
 final class TamarackDbEventStoreAdapter implements AdapterInterface
 {
-    private const DEFAULT_LIMIT = 1000;
+    private const DEFAULT_LIMIT = 10000;
 
     private string $baseUri;
 
@@ -28,32 +30,35 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
 
     private SerializerInterface $eventSerializer;
 
-    private SerializerInterface $metadataSerializer;
+    private ?CurlHandle $curlHandle = null;
 
     public function __construct(
         string $baseUri,
         ?string $authToken,
         EventNameResolverInterface $eventNameResolver,
         SerializerInterface $eventSerializer,
-        SerializerInterface $metadataSerializer,
     ) {
         $this->baseUri = rtrim($baseUri, '/');
         $this->authToken = $authToken;
         $this->eventNameResolver = $eventNameResolver;
         $this->eventSerializer = $eventSerializer;
-        $this->metadataSerializer = $metadataSerializer;
+    }
+
+    public function __destruct()
+    {
+        if ($this->curlHandle !== null) {
+            curl_close($this->curlHandle);
+        }
     }
 
     public function fetch(Query $query, int $fromSequence = 0): StoredRecordedEventStream
     {
         $stream = new StoredRecordedEventStream();
-
         foreach ($this->readMatching($query, $fromSequence) as $row) {
             $stream = $stream
                 ->withRecordedEvents($this->buildEventFromRow($row))
                 ->withHighestSequence((int) $row['sequence']);
         }
-
         return $stream;
     }
 
@@ -94,9 +99,14 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
 
     public function purge(): void
     {
-        throw new TamarackDbEventStoreException(
-            'TamarackDB is an append-only event store; purge() is not supported.',
-        );
+        // "DELETE /" n'existe que si TamarackDB tourne avec TAMARACKDB_DEV_MODE=true
+        // (voir internal/api/router.go et reset.go côté serveur) : hors de ce mode,
+        // la route n'est pas enregistrée et un appel ici échoue en 404.
+        [$status, $body] = $this->execute('DELETE', '/', []);
+
+        if ($status !== 204) {
+            throw $this->buildException($status, $body);
+        }
     }
 
     /** @return Generator<array> */
@@ -123,9 +133,18 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
     {
         return RecordedEvent::create(
             $this->eventSerializer->deserialize($row['payload'], $row['type']),
-            $this->metadataSerializer->deserialize(json_encode($row['metadata'] ?? [])),
+            $this->buildMetadata($row['metadata'] ?? []),
             new DateTimeImmutable($row['time']),
         );
+    }
+
+    private function buildMetadata(array $data): Metadata
+    {
+        $metadata = new Metadata();
+        foreach ($data as $key => $value) {
+            $metadata = $metadata->with($key, $value);
+        }
+        return $metadata;
     }
 
     /** @return array{hasMore: bool, events: array[]} */
@@ -137,7 +156,7 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
             throw $this->buildException($status, $body);
         }
 
-        $lines = array_values(array_filter(explode("\n", trim($body)), fn ($line) => $line !== ''));
+        $lines = explode("\n", rtrim($body, "\n"));
         $header = json_decode((string) array_shift($lines), true);
 
         return [
@@ -166,23 +185,24 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
             $headers[] = sprintf('Authorization: Bearer %s', $this->authToken);
         }
 
-        $handle = curl_init($this->baseUri . $path);
+        $handle = $this->curlHandle ??= curl_init();
         curl_setopt_array($handle, [
+            CURLOPT_URL => $this->baseUri . $path,
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_POSTFIELDS => json_encode($body),
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TCP_KEEPALIVE => 1,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 60,
         ]);
 
         $response = curl_exec($handle);
         if ($response === false) {
-            $error = curl_error($handle);
-            curl_close($handle);
-            throw new TamarackDbEventStoreException(sprintf('TamarackDB request failed: %s', $error));
+            throw new TamarackDbEventStoreException(sprintf('TamarackDB request failed: %s', curl_error($handle)));
         }
 
         $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-        curl_close($handle);
 
         return [$status, $response];
     }
