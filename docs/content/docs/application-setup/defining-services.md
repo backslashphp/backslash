@@ -201,18 +201,11 @@ Define the Repository with its dependencies:
 use Backslash\Repository\Repository;
 use Backslash\Repository\RepositoryInterface;
 use Backslash\PdoTransactionRepositoryMiddleware\PdoTransactionRepositoryMiddleware;
-use Backslash\ProjectionStoreCommitRepositoryMiddleware\ProjectionStoreCommitRepositoryMiddleware;
 
 RepositoryInterface::class => function (ContainerInterface $c) {
     $repository = new Repository(
         $c->get(EventStoreInterface::class),
         $c->get(EventBusInterface::class),
-    );
-
-    $repository->addMiddleware(
-        new ProjectionStoreCommitRepositoryMiddleware(
-            $c->get(ProjectionStoreInterface::class)
-        )
     );
 
     $repository->addMiddleware(
@@ -228,20 +221,10 @@ RepositoryInterface::class => function (ContainerInterface $c) {
 The Repository requires the EventStore for loading and persisting events, and the EventBus for publishing events after
 persistence.
 
-Register `ProjectionStoreCommitRepositoryMiddleware` before `PdoTransactionRepositoryMiddleware`. Since
-`addMiddleware()` adds each new middleware as an outer layer, registering `PdoTransactionRepositoryMiddleware` last
-makes the PDO transaction wrap the ProjectionStore commit:
-
-```
-Pdo::begin()
-  → ProjectionStoreCommitRepositoryMiddleware
-    → storeChanges()  (append() + publish())
-  → ProjectionStore::commit()  (only if publish() succeeded)
-Pdo::commit()
-```
-
-Reversing the order breaks the joint rollback: if `publish()` fails, nothing in the code enforces this order — it
-depends entirely on registration order in your bootstrap.
+Add `PdoTransactionRepositoryMiddleware` when your `EventStoreInterface` is backed by `PdoEventStoreAdapter`. Publishing
+happens right after appending, in the same `storeChanges()` call. Wrapping `storeChanges()` in a PDO transaction
+ensures that if an event handler throws, the newly appended events are rolled back too, instead of being committed
+despite the failed handler.
 
 ## Configuring the EventBus
 
@@ -282,9 +265,7 @@ use Backslash\CommandDispatcher\DispatcherInterface;
 DispatcherInterface::class => fn () => new Dispatcher(),
 ```
 
-Transaction management for events and projections is handled by `PdoTransactionRepositoryMiddleware` and
-`ProjectionStoreCommitRepositoryMiddleware`, registered on the `Repository` (see "Configuring the Repository" above),
-not on the Dispatcher. Add Dispatcher middleware for other cross-cutting concerns like logging or validation; see
+Add Dispatcher middleware for cross-cutting concerns like logging or validation; see
 [Extending with Middleware](../customization/extending-with-middleware.md).
 
 Command handler registration does not happen here; it occurs during the boot process explained

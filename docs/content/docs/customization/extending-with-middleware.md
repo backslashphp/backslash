@@ -268,22 +268,6 @@ use Backslash\PdoTransactionRepositoryMiddleware\PdoTransactionRepositoryMiddlew
 $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 ```
 
-**ProjectionStoreCommitRepositoryMiddleware** - Calls `commit()` on ProjectionStore after `storeChanges()` completes
-successfully, `rollback()` otherwise:
-
-```php
-use Backslash\ProjectionStoreCommitRepositoryMiddleware\ProjectionStoreCommitRepositoryMiddleware;
-
-$repository->addMiddleware(
-    new ProjectionStoreCommitRepositoryMiddleware($projectionStore)
-);
-```
-
-Register `ProjectionStoreCommitRepositoryMiddleware` before `PdoTransactionRepositoryMiddleware` so the PDO
-transaction wraps the ProjectionStore commit — see
-[Defining Services](../application-setup/defining-services.md#configuring-the-repository) for the full ordering
-rationale.
-
 **StreamEnricherEventBusMiddleware** - Enriches events before publishing to EventBus:
 
 ```php
@@ -323,23 +307,23 @@ When a command is dispatched:
 
 This onion-layer pattern ensures middleware executes symmetrically before and after the core operation.
 
-Here's a concrete example using Backslash's built-in middleware:
+Here's a concrete example combining a custom middleware with a built-in one:
 
 ```php
-use Backslash\ProjectionStoreCommitRepositoryMiddleware\ProjectionStoreCommitRepositoryMiddleware;
 use Backslash\PdoTransactionRepositoryMiddleware\PdoTransactionRepositoryMiddleware;
 
-// Order matters: PDO transaction wraps everything
-$repository->addMiddleware(new ProjectionStoreCommitRepositoryMiddleware($projectionStore)); // Inner
-$repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));                    // Outer
+// Order matters: the PDO transaction must wrap the audit log write below,
+// so a failed handler rolls back both the events and the audit log entry.
+$repository->addMiddleware(new AuditLogRepositoryMiddleware($pdo)); // Inner
+$repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo)); // Outer
 ```
 
 Execution flow:
 
 1. PDO transaction begins
 2. `storeChanges()` executes: events are appended and published
-3. ProjectionStore commits buffered projections (only if publishing succeeded)
-4. PDO transaction commits
+3. `AuditLogRepositoryMiddleware` writes an audit log entry, using the same PDO connection
+4. PDO transaction commits, or rolls back everything together if any step failed
 
 ## Inner middleware
 

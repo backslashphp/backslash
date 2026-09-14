@@ -119,7 +119,6 @@ EventBus.publish() → EventHandlers (Projectors)
 #### Middleware
 
 **`PdoTransactionRepositoryMiddleware/`** - Wraps `storeChanges()` in a DB transaction
-**`ProjectionStoreCommitRepositoryMiddleware/`** - Commits/rolls back ProjectionStore after `storeChanges()`
 **`CacheProjectionStoreMiddleware/`** - Caches projection lookups
 
 #### Testing
@@ -324,7 +323,6 @@ The dispatcher, event bus, and repository each use a middleware chain for cross-
 
 ```php
 $dispatcher->addMiddleware(new LoggingMiddleware());
-$repository->addMiddleware(new ProjectionStoreCommitRepositoryMiddleware($projectionStore));
 $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
 // LIFO execution (last registered wraps first)

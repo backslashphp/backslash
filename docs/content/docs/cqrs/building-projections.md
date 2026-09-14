@@ -289,23 +289,48 @@ $projectionStore = new ProjectionStore($adapter);
 
 This adapter stores projections in memory, making it fast and isolated for test scenarios.
 
-## Committing automatically after model changes
+## Committing the ProjectionStore
 
-Backslash provides `ProjectionStoreCommitRepositoryMiddleware`, a repository middleware that manages projection
-transactions automatically. It wraps `storeChanges()` and calls `commit()` on the `ProjectionStore` after events are
-successfully persisted and published. If publishing fails, the middleware calls `rollback()` to discard buffered
-changes.
+The `ProjectionStore` buffers writes and only persists them once you call `commit()`; call `rollback()` to discard
+buffered changes instead. Backslash does not commit the `ProjectionStore` for you: each application decides where in
+its own request lifecycle that commit belongs.
+
+For a typical web application, the simplest place is a PSR-15 middleware executed just before the response is
+returned to the client:
 
 ```php
-use Backslash\ProjectionStoreCommitRepositoryMiddleware\ProjectionStoreCommitRepositoryMiddleware;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Throwable;
 
-$repository->addMiddleware(
-    new ProjectionStoreCommitRepositoryMiddleware($projectionStore)
-);
+final class ProjectionStoreCommitMiddleware implements MiddlewareInterface
+{
+    public function __construct(
+        private ProjectionStoreInterface $projections,
+    ) {
+    }
+
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    {
+        try {
+            $response = $handler->handle($request);
+        } catch (Throwable $t) {
+            $this->projections->rollback();
+            throw $t;
+        }
+
+        $this->projections->commit();
+
+        return $response;
+    }
+}
 ```
 
-This middleware is typically added to the repository during application bootstrap, ensuring all model changes benefit
-from automatic transaction management without requiring explicit commit/rollback calls in command handlers.
+Register it with your framework's PSR-15 middleware stack, wrapping the rest of the request handling so it runs after
+every command has been dispatched. Other kinds of applications (queue consumers, CLI commands) should commit at their
+own equivalent boundary, such as after each processed message or at the end of the command.
 
 ## Creating projectors
 
@@ -386,8 +411,8 @@ is the essence of CQRS.
 **Create multiple projections.** Don't try to create one projection that serves all queries. Build specialized
 projections for different use cases.
 
-**Use buffering for consistency.** The buffering mechanism enables batch updates and transactional consistency. Use
-middleware to manage commit/rollback automatically.
+**Use buffering for consistency.** The buffering mechanism enables batch updates and transactional consistency. Commit
+or roll back at a single, well-defined boundary in your application (see "Committing the ProjectionStore" above).
 
 **Keep projections simple.** Projections should be dumb data structures. Complex logic belongs in the projectors that
 update them.
