@@ -17,7 +17,7 @@ interface ProjectionStoreInterface
 
     public function remove(string $id, string $class): void;
 
-    public function removeBy(string $class): void;
+    public function purgeBy(string $class): void;
 
     public function purge(): void;
 

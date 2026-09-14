@@ -17,7 +17,7 @@ interface MiddlewareInterface
 
     public function remove(string $id, string $class, ProjectionStoreInterface $next): void;
 
-    public function removeBy(string $class, ProjectionStoreInterface $next): void;
+    public function purgeBy(string $class, ProjectionStoreInterface $next): void;
 
     public function purge(ProjectionStoreInterface $next): void;
 

@@ -28,7 +28,7 @@ class PdoProjectionStoreAdapterTest extends TestCase
     }
 
     #[Test]
-    public function it_removes_projections_by_class(): void
+    public function it_purges_projections_by_class(): void
     {
         $store = $this->createStore();
         $store->store(new TestProjection('123'));
@@ -36,7 +36,7 @@ class PdoProjectionStoreAdapterTest extends TestCase
         $store->store(new TestBarProjection('345'));
         $store->commit();
 
-        $store->removeBy(TestProjection::class);
+        $store->purgeBy(TestProjection::class);
 
         $this->assertFalse($store->has('123', TestProjection::class));
         $this->assertFalse($store->has('234', TestProjection::class));

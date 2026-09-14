@@ -64,9 +64,9 @@ final class ProjectionStore implements ProjectionStoreInterface
         $this->chain->remove($id, $class);
     }
 
-    public function removeBy(string $class): void
+    public function purgeBy(string $class): void
     {
-        $this->chain->removeBy($class);
+        $this->chain->purgeBy($class);
     }
 
     public function commit(): void

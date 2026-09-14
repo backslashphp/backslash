@@ -49,10 +49,10 @@ class TestProjectionStoreAdapter implements AdapterInterface
         return $this->adapter->has($id, $class);
     }
 
-    public function removeBy(string $class): void
+    public function purgeBy(string $class): void
     {
         $this->hits++;
-        $this->adapter->removeBy($class);
+        $this->adapter->purgeBy($class);
     }
 
     public function commit(UnitOfWork $unit): void

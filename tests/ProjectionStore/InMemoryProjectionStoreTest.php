@@ -36,7 +36,7 @@ class InMemoryProjectionStoreTest extends TestCase
     }
 
     #[Test]
-    public function it_removes_projections_by_class(): void
+    public function it_purges_projections_by_class(): void
     {
         $store = new ProjectionStore(new InMemoryProjectionStoreAdapter());
 
@@ -45,7 +45,7 @@ class InMemoryProjectionStoreTest extends TestCase
         $store->store(new TestBarProjection('345'));
         $store->commit();
 
-        $store->removeBy(TestFooProjection::class);
+        $store->purgeBy(TestFooProjection::class);
 
         $this->assertFalse($store->has('123', TestFooProjection::class));
         $this->assertFalse($store->has('234', TestFooProjection::class));

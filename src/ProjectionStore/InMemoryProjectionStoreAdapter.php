@@ -33,7 +33,7 @@ final class InMemoryProjectionStoreAdapter implements AdapterInterface
         return isset($this->projections[$class][$id]);
     }
 
-    public function removeBy(string $class): void
+    public function purgeBy(string $class): void
     {
         unset($this->projections[$class]);
     }

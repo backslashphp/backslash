@@ -41,7 +41,7 @@ final class ScenarioProjectionStoreMiddleware implements MiddlewareInterface
         $next->remove($id, $class);
     }
 
-    public function removeBy(string $class, ProjectionStoreInterface $next): void
+    public function purgeBy(string $class, ProjectionStoreInterface $next): void
     {
         if ($this->tracing) {
             foreach ($this->trace as $key => $projection) {
@@ -50,7 +50,7 @@ final class ScenarioProjectionStoreMiddleware implements MiddlewareInterface
                 }
             }
         }
-        $next->removeBy($class);
+        $next->purgeBy($class);
     }
 
     public function purge(ProjectionStoreInterface $next): void

@@ -42,7 +42,7 @@ class ScenarioProjectionStoreMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function it_removes_traced_projections_of_the_removed_class(): void
+    public function it_removes_traced_projections_of_the_purged_class(): void
     {
         $trace = new ScenarioProjectionStoreMiddleware();
         $trace->startTracing();
@@ -54,7 +54,7 @@ class ScenarioProjectionStoreMiddlewareTest extends TestCase
 
         $this->assertCount(1, $trace->getTracedProjections());
 
-        $store->removeBy($projection::class);
+        $store->purgeBy($projection::class);
 
         $this->assertEmpty($trace->getTracedProjections());
     }

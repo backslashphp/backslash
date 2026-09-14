@@ -39,7 +39,7 @@ class CacheProjectionStoreMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function it_clears_cached_entries_of_the_removed_class(): void
+    public function it_clears_cached_entries_of_the_purged_class(): void
     {
         $adapter = new TestProjectionStoreAdapter();
         $store = new ProjectionStore($adapter);
@@ -49,7 +49,7 @@ class CacheProjectionStoreMiddlewareTest extends TestCase
         $store->commit();
         $store->find('123', TestProjection::class);
 
-        $store->removeBy(TestProjection::class);
+        $store->purgeBy(TestProjection::class);
 
         $adapter->reset();
         $store->has('123', TestProjection::class);
