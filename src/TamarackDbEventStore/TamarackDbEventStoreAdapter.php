@@ -30,6 +30,8 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
 
     private SerializerInterface $eventSerializer;
 
+    private int $limit = self::DEFAULT_LIMIT;
+
     private ?CurlHandle $curlHandle = null;
 
     public function __construct(
@@ -42,6 +44,11 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
         $this->authToken = $authToken;
         $this->eventNameResolver = $eventNameResolver;
         $this->eventSerializer = $eventSerializer;
+    }
+
+    public function setLimit(int $limit): void
+    {
+        $this->limit = $limit;
     }
 
     public function fetch(Query $query, int $fromSequence = 0): StoredRecordedEventStream
@@ -92,9 +99,9 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
 
     public function purge(): void
     {
-        // "DELETE /" n'existe que si TamarackDB tourne avec TAMARACKDB_DEV_MODE=true
-        // (voir internal/api/router.go et reset.go côté serveur) : hors de ce mode,
-        // la route n'est pas enregistrée et un appel ici échoue en 404.
+        // "DELETE /" only exists when TamarackDB runs with TAMARACKDB_DEV_MODE=true
+        // (see internal/api/router.go and reset.go server-side): outside that mode,
+        // the route isn't registered and a call here fails with 404.
         [$status, $body] = $this->execute('DELETE', '/', []);
 
         if ($status !== 204) {
@@ -109,7 +116,7 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
         $afterSequence = $fromSequence > 0 ? $fromSequence - 1 : null;
 
         do {
-            $body = ['query' => $queryPayload, 'limit' => self::DEFAULT_LIMIT];
+            $body = ['query' => $queryPayload, 'limit' => $this->limit];
             if ($afterSequence !== null) {
                 $body['afterSequence'] = $afterSequence;
             }
@@ -149,13 +156,7 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
             throw $this->buildException($status, $body);
         }
 
-        $lines = explode("\n", rtrim($body, "\n"));
-        $header = json_decode((string) array_shift($lines), true);
-
-        return [
-            'hasMore' => (bool) ($header['hasMore'] ?? false),
-            'events' => array_map(fn ($line) => json_decode($line, true), $lines),
-        ];
+        return (new NdjsonReadResponse($body))->toEvents();
     }
 
     private function httpAppend(array $body): void
