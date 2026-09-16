@@ -17,6 +17,7 @@ use Backslash\Serializer\SerializerInterface;
 use CurlHandle;
 use DateTimeImmutable;
 use Generator;
+use stdClass;
 
 final class TamarackDbEventStoreAdapter implements AdapterInterface
 {
@@ -73,8 +74,8 @@ final class TamarackDbEventStoreAdapter implements AdapterInterface
         foreach ($stream as $recordedEvent) {
             $events[] = [
                 'type' => $this->eventNameResolver->resolveName($recordedEvent->getEvent()::class),
-                'identifiers' => $recordedEvent->getEvent()->getIdentifiers()->toArray(),
-                'metadata' => $recordedEvent->getMetadata()->toArray(),
+                'identifiers' => array_filter($recordedEvent->getEvent()->getIdentifiers()->toArray()) ?: new stdClass(),
+                'metadata' => array_filter($recordedEvent->getMetadata()->toArray()) ?: new stdClass(),
                 'payload' => $this->eventSerializer->serialize($recordedEvent->getEvent()),
             ];
         }
