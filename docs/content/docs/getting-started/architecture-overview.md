@@ -79,6 +79,10 @@ Backslash uses optimistic concurrency control to prevent race conditions when wr
 stream before appending new ones. If another process has modified the stream in the meantime, a concurrency exception is
 thrown, allowing you to retry the operation with the latest state.
 
+This conditional append relies on no other process being able to interleave a write between the check and the insert.
+SQLite's single-writer model guarantees this, so `PdoEventStoreAdapter` only supports SQLite. MySQL/InnoDB's default
+isolation level does not offer the same guarantee without additional locking, which Backslash does not add.
+
 ## What's not included
 
 Backslash focuses exclusively on event sourcing and CQRS infrastructure. It intentionally does not provide:
