@@ -13,14 +13,14 @@ class TestInspector implements InspectorInterface
     /** @var RecordedEvent[] */
     private array $inspectedEvents = [];
 
-    private Query $query;
+    private ?Query $query;
 
-    public function __construct(Query $query)
+    public function __construct(?Query $query)
     {
         $this->query = $query;
     }
 
-    public function getQuery(): Query
+    public function getQuery(): ?Query
     {
         return $this->query;
     }

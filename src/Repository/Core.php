@@ -24,7 +24,7 @@ final class Core implements RepositoryInterface
         $this->eventBus = $eventBus;
     }
 
-    public function loadModel(string $modelClass, Query $query): ModelInterface
+    public function loadModel(string $modelClass, ?Query $query): ModelInterface
     {
         $storedEvents = $this->eventStore->fetch($query);
         /** @var ModelInterface $model */

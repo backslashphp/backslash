@@ -33,9 +33,9 @@ class InspectorTest extends TestCase
             RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
             RecordedEvent::create(new StudentRegisteredEvent('2', 'Bill'), new Metadata(), Clock::now()),
             RecordedEvent::create(new StudentRegisteredEvent('3', 'Mark'), new Metadata(), Clock::now()),
-        ), new Query(), null);
+        ), null, null);
 
-        $eventStore->inspect(new Inspector($eventBus, new Query()));
+        $eventStore->inspect(new Inspector($eventBus, null));
     }
 
     #[Test]
@@ -51,8 +51,8 @@ class InspectorTest extends TestCase
             RecordedEvent::create(new StudentRegisteredEvent('2', 'Bill'), new Metadata(), Clock::now()),
             RecordedEvent::create(new StudentRegisteredEvent('3', 'Mark'), new Metadata(), Clock::now()),
             RecordedEvent::create(new CourseCreatedEvent('1', 'MATH-101', 'Maths'), new Metadata(), Clock::now()),
-        ), new Query(), null);
+        ), null, null);
 
-        $eventStore->inspect(new Inspector($eventBus, (new Query())->withItem(EventClass::in(CourseCreatedEvent::class))));
+        $eventStore->inspect(new Inspector($eventBus, new Query(EventClass::in(CourseCreatedEvent::class))));
     }
 }

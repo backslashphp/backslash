@@ -20,12 +20,12 @@ final class StreamEnricherEventStoreMiddleware implements MiddlewareInterface
         $this->enricher = $enricher;
     }
 
-    public function fetch(Query $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
+    public function fetch(?Query $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream
     {
         return $next->fetch($query, $fromSequence);
     }
 
-    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
+    public function append(RecordedEventStream $stream, ?Query $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void
     {
         $next->append($this->enricher->enrich($stream), $concurrencyCheck, $expectedSequence);
     }

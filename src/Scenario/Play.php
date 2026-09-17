@@ -11,7 +11,6 @@ use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventBusInterface;
 use Backslash\EventStore\EventStoreInterface;
-use Backslash\EventStore\Query\Query;
 use Backslash\Repository\RepositoryInterface;
 use DateTimeImmutable;
 use Exception;
@@ -240,7 +239,7 @@ final class Play
         }
 
         if ($this->givenEvents) {
-            $eventStore->append($this->evaluate($this->givenEvents), new Query(), null);
+            $eventStore->append($this->evaluate($this->givenEvents), null, null);
             $eventBus->publish($this->evaluate($this->givenEvents));
         }
         foreach ($this->givenCommands as $command) {

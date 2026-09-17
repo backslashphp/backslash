@@ -48,7 +48,7 @@ enum Driver: string
 
     public function buildInsertStatementsAndValues(
         RecordedEventStream $stream,
-        Query $concurrencyCheck,
+        ?Query $concurrencyCheck,
         ?int $expectedSequence,
         EventNameResolverInterface $eventNameResolver,
         SerializerInterface $eventSerializer,

@@ -19,12 +19,12 @@ final class MiddlewareDelegator implements EventStoreInterface
         $this->next = $next;
     }
 
-    public function fetch(Query $query, int $fromSequence = 0): StoredRecordedEventStream
+    public function fetch(?Query $query, int $fromSequence = 0): StoredRecordedEventStream
     {
         return $this->middleware->fetch($query, $fromSequence, $this->next);
     }
 
-    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence): void
+    public function append(RecordedEventStream $stream, ?Query $concurrencyCheck, ?int $expectedSequence): void
     {
         $this->middleware->append($stream, $concurrencyCheck, $expectedSequence, $this->next);
     }

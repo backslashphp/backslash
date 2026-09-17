@@ -19,7 +19,7 @@ class StudentNameChangeModel extends AbstractModel
 
     public static function getQuery(string $studentId): Query
     {
-        return (new Query())->withItem(
+        return new Query(
             EventClass::in(StudentRegisteredEvent::class, StudentNameChangedEvent::class),
             Identifier::is('studentId', $studentId),
         );

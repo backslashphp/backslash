@@ -12,12 +12,12 @@ use Backslash\EventStore\StoredRecordedEventStream;
 
 class TestAdapter implements AdapterInterface
 {
-    public function fetch(Query $query, int $fromSequence = 0): StoredRecordedEventStream
+    public function fetch(?Query $query, int $fromSequence = 0): StoredRecordedEventStream
     {
         return new StoredRecordedEventStream();
     }
 
-    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence): void
+    public function append(RecordedEventStream $stream, ?Query $concurrencyCheck, ?int $expectedSequence): void
     {
     }
 

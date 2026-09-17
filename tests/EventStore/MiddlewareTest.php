@@ -8,7 +8,6 @@ use Backslash\Clock\Clock;
 use Backslash\Event\Metadata;
 use Backslash\Event\RecordedEvent;
 use Backslash\Event\RecordedEventStream;
-use Backslash\EventStore\Query\Query;
 use Backslash\Shared\Event\StudentNameChangedEvent;
 use Backslash\Shared\Event\StudentRegisteredEvent;
 use Backslash\Shared\EventStore\TestAdapter;
@@ -24,14 +23,14 @@ class MiddlewareTest extends TestCase
         $stream = new RecordedEventStream(
             RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
         );
-        $store->append($stream, new Query(), null);
+        $store->append($stream, null, null);
 
         $output = [];
         $store->addMiddleware(new TestMiddleware('mw1', $output));
         $store->addMiddleware(new TestMiddleware('mw2', $output));
         $store->addMiddleware(new TestMiddleware('mw3', $output));
 
-        $store->fetch(new Query());
+        $store->fetch(null);
         $this->assertEquals(
             $output,
             [
@@ -48,7 +47,7 @@ class MiddlewareTest extends TestCase
         $stream = new RecordedEventStream(
             RecordedEvent::create(new StudentNameChangedEvent('1', 'John', 'James'), new Metadata(), Clock::now()),
         );
-        $store->append($stream, new Query(), null);
+        $store->append($stream, null, null);
         $this->assertEquals(
             $output,
             [
@@ -99,7 +98,7 @@ class MiddlewareTest extends TestCase
         $store->addMiddleware(new TestMiddleware('outer', $output));
         $store->addInnerMiddleware(new TestMiddleware('inner', $output));
 
-        $store->fetch(new Query());
+        $store->fetch(null);
         $this->assertEquals(
             [
                 'before fetch outer',

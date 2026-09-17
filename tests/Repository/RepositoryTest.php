@@ -7,7 +7,6 @@ namespace Backslash\Repository;
 use Backslash\EventBus\EventBus;
 use Backslash\EventNameResolver\MatchingClassEventNameResolverAdapter;
 use Backslash\EventStore\EventStore;
-use Backslash\EventStore\Query\Query;
 use Backslash\Pdo\PdoProxy;
 use Backslash\PdoEventStore\JsonEventSerializer;
 use Backslash\PdoEventStore\JsonMetadataSerializer;
@@ -77,7 +76,7 @@ class RepositoryTest extends TestCase
         $this->repository->addMiddleware(new TestRepositoryMiddleware('mw2', $output));
         $this->repository->addMiddleware(new TestRepositoryMiddleware('mw3', $output));
 
-        $this->repository->loadModel(StudentRegistrationModel::class, new Query());
+        $this->repository->loadModel(StudentRegistrationModel::class, null);
         $this->assertEquals(
             $output,
             [
@@ -98,7 +97,7 @@ class RepositoryTest extends TestCase
         $this->repository->addMiddleware(new TestRepositoryMiddleware('outer', $output));
         $this->repository->addInnerMiddleware(new TestRepositoryMiddleware('inner', $output));
 
-        $this->repository->loadModel(StudentRegistrationModel::class, new Query());
+        $this->repository->loadModel(StudentRegistrationModel::class, null);
         $this->assertEquals(
             [
                 'before outer',

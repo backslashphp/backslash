@@ -9,19 +9,16 @@ final class Query
     /** @var QueryItem[] */
     private array $items;
 
-    public function __construct(QueryItem ...$items)
+    public function __construct(EventClass|Identifier|Metadata $filter, EventClass|Identifier|Metadata ...$filters)
     {
-        $this->items = $items;
+        $this->items = [new QueryItem($filter, ...$filters)];
     }
 
-    public function withItem(EventClass|Identifier|Metadata $filter, EventClass|Identifier|Metadata ...$filters): self
+    public function or(EventClass|Identifier|Metadata $filter, EventClass|Identifier|Metadata ...$filters): self
     {
-        return new self(...[...$this->items, new QueryItem($filter, ...$filters)]);
-    }
-
-    public function isMatchAll(): bool
-    {
-        return count($this->items) === 0;
+        $clone = clone $this;
+        $clone->items = [...$this->items, new QueryItem($filter, ...$filters)];
+        return $clone;
     }
 
     /** @return QueryItem[] */

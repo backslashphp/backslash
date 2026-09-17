@@ -90,7 +90,7 @@ class StreamEnricherEventStoreMiddleware implements MiddlewareInterface
 
     public function append(
         RecordedEventStream $stream,
-        Query $concurrencyCheck,
+        ?Query $concurrencyCheck,
         ?int $expectedSequence,
         EventStoreInterface $next
     ): void {
@@ -99,7 +99,7 @@ class StreamEnricherEventStoreMiddleware implements MiddlewareInterface
     }
 
     public function fetch(
-        Query $query,
+        ?Query $query,
         int $fromSequence,
         EventStoreInterface $next
     ): StoredRecordedEventStream {
@@ -206,7 +206,9 @@ use Backslash\Repository\MiddlewareInterface;
 use Backslash\Repository\RepositoryInterface;
 use Backslash\Model\ModelInterface;
 use Backslash\EventStore\Query\EventClass;
+use Backslash\EventStore\Query\Identifier;
 use Backslash\EventStore\Query\Query;
+use Backslash\EventStore\Query\QueryItem;
 use Backslash\EventStore\Query\Metadata;
 
 class TenantScopingRepositoryMiddleware implements MiddlewareInterface
@@ -218,23 +220,19 @@ class TenantScopingRepositoryMiddleware implements MiddlewareInterface
 
     public function loadModel(
         string $modelClass,
-        Query $query,
+        ?Query $query,
         RepositoryInterface $next
     ): ModelInterface {
-        // A query with no items matches every event; scope it down to this tenant.
-        if ($query->isMatchAll()) {
-            return $next->loadModel($modelClass, (new Query())->withItem(Metadata::is('tenant_id', $this->tenantId)));
+        // null means "no boundary yet"; scope it down to this tenant.
+        if ($query === null) {
+            return $next->loadModel($modelClass, new Query(Metadata::is('tenant_id', $this->tenantId)));
         }
 
         // Otherwise, add the tenant tag to every item, preserving the OR between items
-        $scopedQuery = new Query();
-        foreach ($query->getItems() as $item) {
-            $scopedQuery = $scopedQuery->withItem(
-                EventClass::in(...$item->getEventClasses()),
-                ...$item->getIdentifiers(),
-                ...$item->getMetadata(),
-                Metadata::is('tenant_id', $this->tenantId),
-            );
+        $items = $query->getItems();
+        $scopedQuery = new Query(...$this->scopeItem(array_shift($items)));
+        foreach ($items as $item) {
+            $scopedQuery = $scopedQuery->or(...$this->scopeItem($item));
         }
         return $next->loadModel($modelClass, $scopedQuery);
     }
@@ -242,6 +240,17 @@ class TenantScopingRepositoryMiddleware implements MiddlewareInterface
     public function storeChanges(ModelInterface $model, RepositoryInterface $next): void
     {
         $next->storeChanges($model);
+    }
+
+    /** @return (EventClass|Identifier|Metadata)[] */
+    private function scopeItem(QueryItem $item): array
+    {
+        return [
+            EventClass::in(...$item->getEventClasses()),
+            ...$item->getIdentifiers(),
+            ...$item->getMetadata(),
+            Metadata::is('tenant_id', $this->tenantId),
+        ];
     }
 }
 ```

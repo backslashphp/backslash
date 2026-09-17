@@ -36,7 +36,7 @@ class PdoEventStoreTest extends TestCase
     #[Test]
     public function it_stores_and_finds_stream(): void
     {
-        $query = (new Query())->withItem(EventClass::in(StudentRegisteredEvent::class), Identifier::is('studentId', '1'));
+        $query = new Query(EventClass::in(StudentRegisteredEvent::class), Identifier::is('studentId', '1'));
         $events = $this->store->fetch($query);
         $this->assertCount(0, $events);
 
@@ -45,7 +45,7 @@ class PdoEventStoreTest extends TestCase
                 RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
                 RecordedEvent::create(new StudentRegisteredEvent('2', 'Mary'), new Metadata(), Clock::now()),
             ),
-            new Query(),
+            null,
             null,
         );
         $this->store->append(
@@ -53,23 +53,23 @@ class PdoEventStoreTest extends TestCase
                 RecordedEvent::create(new StudentNameChangedEvent('2', 'Mary', 'Anna'), new Metadata(), Clock::now()),
                 RecordedEvent::create(new StudentPreferredColorChangedEvent('1', ['blue', 'green']), new Metadata(), Clock::now()),
             ),
-            new Query(),
+            null,
             null,
         );
 
         $events = $this->store->fetch($query);
         $this->assertCount(1, $events);
 
-        $query = (new Query())->withItem(Identifier::is('colors', 'red'));
+        $query = new Query(Identifier::is('colors', 'red'));
         $events = $this->store->fetch($query);
         $this->assertCount(0, $events);
 
-        $query = (new Query())->withItem(Identifier::is('colors', 'blue'));
+        $query = new Query(Identifier::is('colors', 'blue'));
         $events = $this->store->fetch($query);
         $this->assertCount(1, $events);
 
         $this->store->purge();
-        $events = $this->store->fetch(new Query());
+        $events = $this->store->fetch(null);
         $this->assertCount(0, $events);
     }
 
@@ -82,11 +82,11 @@ class PdoEventStoreTest extends TestCase
             new RecordedEventStream(
                 RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
             ),
-            new Query(),
+            null,
             null,
         );
 
-        $query = (new Query())->withItem(Identifier::is('studentId', '1'));
+        $query = new Query(Identifier::is('studentId', '1'));
         $storedEvents = $this->store->fetch($query);
 
         $this->store->append(
@@ -115,20 +115,20 @@ class PdoEventStoreTest extends TestCase
                 RecordedEvent::create(new StudentRegisteredEvent('2', 'Mary'), (new Metadata())->with('foo', 'b'), new DateTimeImmutable('2024-01-02')),
                 RecordedEvent::create(new StudentNameChangedEvent('2', 'Mary', 'Anna'), (new Metadata())->with('bar', 'c'), new DateTimeImmutable('2024-01-03')),
             ),
-            new Query(),
+            null,
             null,
         );
 
         $queries = [
-            [new Query(), 3],
-            [(new Query())->withItem(EventClass::in(StudentRegisteredEvent::class)), 2],
-            [(new Query())->withItem(EventClass::in(StudentNameChangedEvent::class)), 1],
-            [(new Query())->withItem(EventClass::in(StudentRegisteredEvent::class, StudentNameChangedEvent::class)), 3],
-            [(new Query())->withItem(EventClass::in('unknown event')), 0],
-            [(new Query())->withItem(Identifier::is('studentId', '1')), 1],
-            [(new Query())->withItem(Identifier::is('studentId', '2')), 2],
-            [(new Query())->withItem(Identifier::is('studentId', '1'))->withItem(Identifier::is('studentId', '2')), 3],
-            [(new Query())->withItem(MetadataQuery::is('foo', 'a')), 1],
+            [null, 3],
+            [new Query(EventClass::in(StudentRegisteredEvent::class)), 2],
+            [new Query(EventClass::in(StudentNameChangedEvent::class)), 1],
+            [new Query(EventClass::in(StudentRegisteredEvent::class, StudentNameChangedEvent::class)), 3],
+            [new Query(EventClass::in('unknown event')), 0],
+            [new Query(Identifier::is('studentId', '1')), 1],
+            [new Query(Identifier::is('studentId', '2')), 2],
+            [new Query(Identifier::is('studentId', '1'))->or(Identifier::is('studentId', '2')), 3],
+            [new Query(MetadataQuery::is('foo', 'a')), 1],
         ];
 
         foreach ($queries as $query) {

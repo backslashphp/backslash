@@ -9,9 +9,9 @@ use Backslash\EventStore\Query\Query;
 
 class TestInspector implements InspectorInterface
 {
-    public function getQuery(): Query
+    public function getQuery(): ?Query
     {
-        return new Query();
+        return null;
     }
 
     public function inspect(RecordedEvent $recordedEvent): void

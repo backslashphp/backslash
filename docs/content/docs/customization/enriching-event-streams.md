@@ -142,7 +142,7 @@ use Backslash\EventStore\Query\Metadata;
 use Backslash\EventStore\Query\Query;
 
 // Load only events for specific tenant
-$query = (new Query())->withItem(
+$query = new Query(
     EventClass::in(CourseDefinedEvent::class),
     Metadata::is('tenant_id', $currentTenantId),
 );

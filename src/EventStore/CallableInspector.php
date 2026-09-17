@@ -12,15 +12,15 @@ final class CallableInspector implements InspectorInterface
     /** @var callable */
     private $callable;
 
-    private Query $query;
+    private ?Query $query;
 
-    public function __construct(callable $callable, Query $query)
+    public function __construct(callable $callable, ?Query $query)
     {
         $this->callable = $callable;
         $this->query = $query;
     }
 
-    public function getQuery(): Query
+    public function getQuery(): ?Query
     {
         return $this->query;
     }

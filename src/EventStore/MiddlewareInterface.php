@@ -9,9 +9,9 @@ use Backslash\EventStore\Query\Query;
 
 interface MiddlewareInterface
 {
-    public function fetch(Query $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream;
+    public function fetch(?Query $query, int $fromSequence, EventStoreInterface $next): StoredRecordedEventStream;
 
-    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void;
+    public function append(RecordedEventStream $stream, ?Query $concurrencyCheck, ?int $expectedSequence, EventStoreInterface $next): void;
 
     public function inspect(InspectorInterface $inspector, EventStoreInterface $next): void;
 

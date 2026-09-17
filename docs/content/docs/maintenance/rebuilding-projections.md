@@ -89,16 +89,16 @@ $relevantEvents = [
 ];
 
 // Create a query filtering for these events only
-$query = (new Query())->withItem(EventClass::in(...$relevantEvents));
+$query = new Query(EventClass::in(...$relevantEvents));
 
 // Inspector will only replay these specific events
 $inspector = new Inspector($eventBus, $query);
 $eventStore->inspect($inspector);
 ```
 
-Without a query parameter, the `Inspector` replays all events in the EventStore (equivalent to a plain `new Query()`,
-where `isMatchAll()` is `true`). When rebuilding all projections, omit the query; when rebuilding specific projections,
-use `EventClass::in()` to filter for only the necessary events.
+The `Inspector` accepts `?Query`; without a query parameter (or passing `null`), it replays all events in the
+EventStore. When rebuilding all projections, omit the query; when rebuilding specific projections, use `EventClass::in()`
+to filter for only the necessary events.
 
 ## Tracking rebuild progress
 
@@ -341,7 +341,7 @@ $projectorClass = $argv[1]; // e.g., CourseListProjector::class
 $eventClasses = $projectorClass::getSubscribedEvents();
 
 // Create query to filter for relevant events only
-$query = (new Query())->withItem(EventClass::in(...$eventClasses));
+$query = new Query(EventClass::in(...$eventClasses));
 
 // Create and register projector
 $eventBus = new EventBus();

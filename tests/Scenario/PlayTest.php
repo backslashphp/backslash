@@ -11,7 +11,6 @@ use Backslash\Event\RecordedEventStream;
 use Backslash\EventBus\EventBus;
 use Backslash\EventBus\EventHandlerInterface;
 use Backslash\EventStore\EventStore;
-use Backslash\EventStore\Query\Query;
 use Backslash\ProjectionStore\InMemoryProjectionStoreAdapter;
 use Backslash\ProjectionStore\ProjectionStore;
 use Backslash\Shared\Event\CourseCreatedEvent;
@@ -91,7 +90,7 @@ class PlayTest extends TestCase
             new RecordedEventStream(
                 RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), new DateTimeImmutable()),
             ),
-            new Query(),
+            null,
             null,
         );
 

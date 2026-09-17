@@ -9,7 +9,7 @@ use Backslash\EventStore\Query\Query;
 
 final class QueryToWhereClause
 {
-    private Query $query;
+    private ?Query $query;
 
     private EventNameResolverInterface $eventNameResolver;
 
@@ -20,7 +20,7 @@ final class QueryToWhereClause
     private bool $resolved = false;
 
     public function __construct(
-        Query $query,
+        ?Query $query,
         EventNameResolverInterface $eventNameResolver,
     ) {
         $this->query = $query;
@@ -47,7 +47,7 @@ final class QueryToWhereClause
     {
         $this->resolved = true;
 
-        if ($this->query->isMatchAll()) {
+        if ($this->query === null) {
             $this->statement = '1=1';
             return;
         }

@@ -24,7 +24,7 @@ final class PdoTransactionRepositoryMiddleware implements MiddlewareInterface
         $this->nestedLevels = 0;
     }
 
-    public function loadModel(string $modelClass, Query $query, RepositoryInterface $next): ModelInterface
+    public function loadModel(string $modelClass, ?Query $query, RepositoryInterface $next): ModelInterface
     {
         return $next->loadModel($modelClass, $query);
     }

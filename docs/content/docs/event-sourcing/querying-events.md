@@ -21,19 +21,19 @@ Here are some basic query examples:
 
 ```php
 // Load all events of a specific type
-(new Query())->withItem(EventClass::in(StudentRegisteredEvent::class))
+new Query(EventClass::in(StudentRegisteredEvent::class))
 
 // Load events for a specific entity
-(new Query())->withItem(Identifier::is('studentId', 'student-123'))
+new Query(Identifier::is('studentId', 'student-123'))
 
 // Combine filters (AND, within the same item)
-(new Query())->withItem(
+new Query(
     EventClass::in(StudentRegisteredEvent::class),
     Identifier::is('studentId', 'student-123'),
 )
 
-// Load every event
-new Query()
+// Load every event: pass null instead of a Query to fetch()/loadModel()
+null
 ```
 
 The demo includes a static method on each Model to build its query. This is a convenient convention but not required by
@@ -44,7 +44,7 @@ Here's a simple case for `CourseCapacityModel`:
 ```php
 public static function buildQuery(string $courseId): Query
 {
-    return (new Query())->withItem(
+    return new Query(
         EventClass::in(
             CourseCapacityChangedEvent::class,
             CourseDefinedEvent::class,
@@ -58,8 +58,9 @@ This query loads events related to a single course's capacity.
 
 ## Building queries with EventClass and Identifier
 
-A `->withItem(...)` call builds a single item; every filter passed to it applies to that same item. A `Query` with no
-items at all (`new Query()` left as-is) matches every event; `->isMatchAll(): bool` tells you whether that's the case.
+The `Query` constructor builds the first item; every filter passed to it applies to that same item. A `Query` always
+has at least one item, there is no "match everything" `Query`. To load every event, pass `null` instead of a `Query`
+to `fetch()`, `append()`, or `Repository::loadModel()`.
 
 **EventClass filters:**
 
@@ -68,11 +69,11 @@ items at all (`new Query()` left as-is) matches every event; `->isMatchAll(): bo
 **Identifier filters:**
 
 - `Identifier::is('key', 'value')` - Exact identifier match
-- Multiple identifiers passed to the same `->withItem(...)` call are combined with AND
+- Multiple identifiers passed to the same constructor/`->or(...)` call are combined with AND
 
 **Combining items:**
 
-- `->withItem(...)` - Adds another item to the query; an event matching any item is loaded
+- `->or(...)` - Adds another item to the query; an event matching any item is loaded
 
 ## Building multi-entity queries
 
@@ -81,26 +82,25 @@ The `CourseSubscriptionModel` demonstrates a more complex query spanning multipl
 ```php
 public static function buildQuery(string $studentId, string $courseId): Query
 {
-    return (new Query())
-        ->withItem(
-            EventClass::in(
-                CourseCapacityChangedEvent::class,
-                CourseDefinedEvent::class,
-            ),
-            Identifier::is('courseId', $courseId),
-        )
-        ->withItem(
+    return new Query(
+        EventClass::in(
+            CourseCapacityChangedEvent::class,
+            CourseDefinedEvent::class,
+        ),
+        Identifier::is('courseId', $courseId),
+    )
+        ->or(
             EventClass::in(StudentRegisteredEvent::class),
             Identifier::is('studentId', $studentId),
         )
-        ->withItem(
+        ->or(
             EventClass::in(
                 StudentUnsubscribedFromCourseEvent::class,
                 StudentSubscribedToCourseEvent::class,
             ),
             Identifier::is('studentId', $studentId),
         )
-        ->withItem(
+        ->or(
             EventClass::in(
                 StudentSubscribedToCourseEvent::class,
                 StudentUnsubscribedFromCourseEvent::class,

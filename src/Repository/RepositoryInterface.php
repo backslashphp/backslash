@@ -9,7 +9,7 @@ use Backslash\Model\ModelInterface;
 
 interface RepositoryInterface
 {
-    public function loadModel(string $modelClass, Query $query): ModelInterface;
+    public function loadModel(string $modelClass, ?Query $query): ModelInterface;
 
     public function storeChanges(ModelInterface $model): void;
 }

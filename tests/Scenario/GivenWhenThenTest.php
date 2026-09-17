@@ -39,7 +39,7 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        (new Query())->withItem(Identifier::is('studentId', '1')),
+                        new Query(Identifier::is('studentId', '1')),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
@@ -85,7 +85,7 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        (new Query())->withItem(Identifier::is('studentId', '1')),
+                        new Query(Identifier::is('studentId', '1')),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
@@ -130,7 +130,7 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        (new Query())->withItem(Identifier::is('studentId', '1')),
+                        new Query(Identifier::is('studentId', '1')),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
@@ -185,7 +185,7 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        (new Query())->withItem(Identifier::is('studentId', '1')),
+                        new Query(Identifier::is('studentId', '1')),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
@@ -230,7 +230,7 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        (new Query())->withItem(Identifier::is('studentId', '1')),
+                        new Query(Identifier::is('studentId', '1')),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);
@@ -254,7 +254,7 @@ class GivenWhenThenTest extends TestCase
                 ->when(function (RepositoryInterface $repo): void {
                     $model = $repo->loadModel(
                         TestStudentModel::class,
-                        (new Query())->withItem(Identifier::is('studentId', '1')),
+                        new Query(Identifier::is('studentId', '1')),
                     );
                     $model->changeName('Jane');
                     $repo->storeChanges($model);

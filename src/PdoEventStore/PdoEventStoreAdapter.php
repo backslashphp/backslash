@@ -54,7 +54,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
         }
     }
 
-    public function fetch(Query $query, int $fromSequence = 0): StoredRecordedEventStream
+    public function fetch(?Query $query, int $fromSequence = 0): StoredRecordedEventStream
     {
         $whereClause = new QueryToWhereClause($query, $this->eventNameResolver);
         $sql = $this->driver->buildSelectStatement($fromSequence, $whereClause);
@@ -70,7 +70,7 @@ final class PdoEventStoreAdapter implements AdapterInterface
         return $stream;
     }
 
-    public function append(RecordedEventStream $stream, Query $concurrencyCheck, ?int $expectedSequence): void
+    public function append(RecordedEventStream $stream, ?Query $concurrencyCheck, ?int $expectedSequence): void
     {
         if (!count($stream)) {
             return;

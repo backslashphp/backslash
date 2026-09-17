@@ -219,34 +219,33 @@ use Backslash\EventStore\Query\Identifier;
 use Backslash\EventStore\Query\Query;
 
 // Simple query
-$query = (new Query())->withItem(EventClass::in(StudentRegistered::class));
+$query = new Query(EventClass::in(StudentRegistered::class));
 
 // Query with identifier
-$query = (new Query())->withItem(Identifier::is('studentId', $studentId));
+$query = new Query(Identifier::is('studentId', $studentId));
 
 // Complex query (AND, within the same item)
-$query = (new Query())->withItem(
+$query = new Query(
     EventClass::in(StudentRegistered::class, StudentUpdated::class),
     Identifier::is('studentId', $studentId),
 );
 
 // Multi-entity boundary (OR, across items)
-$query = (new Query())
-    ->withItem(Identifier::is('courseId', $courseId))
-    ->withItem(Identifier::is('studentId', $studentId));
+$query = new Query(Identifier::is('courseId', $courseId))
+    ->or(Identifier::is('studentId', $studentId));
 
-// Every event, no filtering
-$query = new Query();
-$query->isMatchAll(); // true
+// Every event, no filtering: pass null instead of a Query
+$repository->loadModel(Student::class, null);
+$eventStore->fetch(null);
 ```
 
 **Characteristics:**
-- Built with `new Query()` and `->withItem(...)` (each call adds one item, requires at least one filter)
+- Built with `new Query(...)` (constructor requires at least one filter, forming the first item) and `->or(...)` to add further items
 - Filter by event class: `EventClass::in()` (accepts one or more classes, combined with OR)
 - Filter by identifier: `Identifier::is('key', 'value')`
 - Filter by technical metadata: `Metadata::is('key', 'value')`
-- Filters passed to the same `->withItem(...)` call combine with AND; separate `->withItem(...)` calls combine with OR
-- A `Query` with no items (`new Query()` left as-is) matches every event; check with `->isMatchAll(): bool`
+- Filters passed to the same constructor/`->or(...)` call combine with AND; separate `->or(...)` calls combine with OR
+- A `Query` always has at least one item; there is no "match everything" `Query`. "No boundary" (all events, or no DCB check) is expressed with `null`, accepted by `fetch()`, `append()`, and `Repository::loadModel()`
 - Support multi-entity boundaries
 
 ### 4. Projections
@@ -399,13 +398,12 @@ Queries define what constitutes a consistency boundary.
 
 ```php
 // To register a student, we only look at their own events
-$query = (new Query())->withItem(Identifier::is('studentId', $studentId));
+$query = new Query(Identifier::is('studentId', $studentId));
 $student = $repository->loadModel(Student::class, $query);
 
 // To enroll in a course, we look at both course and student events
-$query = (new Query())
-    ->withItem(Identifier::is('courseId', $courseId))
-    ->withItem(Identifier::is('studentId', $studentId));
+$query = new Query(Identifier::is('courseId', $courseId))
+    ->or(Identifier::is('studentId', $studentId));
 $enrollment = $repository->loadModel(Enrollment::class, $query);
 ```
 
@@ -540,7 +538,7 @@ $scenario->play(
         )
         // Or use a closure for direct model manipulation
         ->when(function (RepositoryInterface $repo): void {
-            $student = $repo->loadModel(Student::class, (new Query())->withItem(Identifier::is('studentId', '123')));
+            $student = $repo->loadModel(Student::class, new Query(Identifier::is('studentId', '123')));
             $student->enrollInCourse('MATH101');
             $repo->storeChanges($student);
         })
@@ -638,7 +636,7 @@ Ability to build multiple specialized read models from the same event stream.
 3. Dispatcher.dispatch(command)
 4. PdoTransactionMiddleware starts transaction
 5. Handler receives command
-6. Handler builds query: (new Query())->withItem(Identifier::is('studentId', $id))
+6. Handler builds query: new Query(Identifier::is('studentId', $id))
 7. Repository.loadModel(Student::class, query)
 8. EventStore.fetch(query) → returns existing events (or empty)
 9. Student model created and events replayed
@@ -692,8 +690,8 @@ Ability to build multiple specialized read models from the same event stream.
 
 - Define the minimal boundary necessary for the decision
 - Include all entities that affect the decision
-- Pass multiple filters to the same `->withItem(...)` call for restrictive (AND) filters
-- Use another `->withItem(...)` call for multi-entity boundaries (OR)
+- Pass multiple filters to the same constructor/`->or(...)` call for restrictive (AND) filters
+- Use another `->or(...)` call for multi-entity boundaries (OR)
 
 ## Important Files by Role
 
@@ -704,7 +702,7 @@ Implement `EventInterface` in the domain
 Extend `AbstractModel` in the domain
 
 ### To create a query
-Use `new Query()` with `->withItem(...)` and `EventClass`, `Identifier`, and `Metadata` filters in the domain
+Use `new Query(...)` with `EventClass`, `Identifier`, and `Metadata` filters, chaining `->or(...)` for extra items, in the domain
 
 ### To create a command handler
 Implement `HandlerInterface` with `HandleCommandTrait`

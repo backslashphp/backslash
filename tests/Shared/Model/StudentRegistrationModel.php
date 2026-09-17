@@ -14,7 +14,7 @@ class StudentRegistrationModel extends AbstractModel
 {
     public static function getQuery(string $studentId): Query
     {
-        return (new Query())->withItem(EventClass::in(StudentRegisteredEvent::class), Identifier::is('studentId', $studentId));
+        return new Query(EventClass::in(StudentRegisteredEvent::class), Identifier::is('studentId', $studentId));
     }
 
     public function register(string $studentId, string $name): void
