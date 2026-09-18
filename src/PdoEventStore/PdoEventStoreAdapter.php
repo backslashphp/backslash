@@ -76,6 +76,11 @@ final class PdoEventStoreAdapter implements AdapterInterface
             return;
         }
 
+        if ($this->driver === Driver::SQLITE) {
+            $this->appendSqlite($stream, $concurrencyCheck, $expectedSequence);
+            return;
+        }
+
         [$eventStatement, $identifiersStatement, $metadataStatement] = $this->driver->buildInsertStatementsAndValues(
             $stream,
             $concurrencyCheck,
@@ -117,6 +122,31 @@ final class PdoEventStoreAdapter implements AdapterInterface
         $this->pdo->exec($this->driver->buildTruncateTableStatement('event_store_identifiers'));
         $this->pdo->exec($this->driver->buildTruncateTableStatement('event_store_metadata'));
         $this->pdo->exec($this->driver->buildTruncateTableStatement('event_store'));
+    }
+
+    private function appendSqlite(RecordedEventStream $stream, ?Query $concurrencyCheck, ?int $expectedSequence): void
+    {
+        [$eventStatement, $identifierRows, $metadataRows] = $this->driver->buildEventInsertStatementAndValues(
+            $stream,
+            $concurrencyCheck,
+            $expectedSequence,
+            $this->eventNameResolver,
+            $this->eventSerializer,
+            $this->metadataSerializer,
+            $this->eventIdGenerator,
+        );
+
+        if ($this->execute($eventStatement) === 0) {
+            throw new ConcurrencyException();
+        }
+
+        $sequences = $this->driver->resolveInsertedSequences((int) $this->pdo->lastInsertId(), count($stream));
+
+        foreach ([['event_store_identifiers', $identifierRows], ['event_store_metadata', $metadataRows]] as [$tableName, $rows]) {
+            foreach ($this->driver->buildChildInsertStatementsFromSequences($tableName, $rows, $sequences) as $statement) {
+                $this->execute($statement);
+            }
+        }
     }
 
     private function detectDriver(): void

@@ -12,6 +12,7 @@ use Backslash\Serializer\SerializerInterface;
 
 enum Driver: string
 {
+    private const MAX_VARIABLES = 32000;
     public function buildCreateTableStatements(): array
     {
         return match ($this) {
@@ -24,9 +25,9 @@ enum Driver: string
                 'CREATE TABLE IF NOT EXISTS `event_store` (`sequence` INTEGER PRIMARY KEY AUTOINCREMENT, `event_uid` TEXT NOT NULL, `event_name` TEXT NOT NULL, `event_payload` TEXT NOT NULL, `event_metadata` TEXT NOT NULL, `event_time` TEXT NOT NULL, UNIQUE(`event_uid`))',
                 'CREATE INDEX IF NOT EXISTS `event_store_event_name_idx` ON `event_store` (`event_name`)',
                 'CREATE INDEX IF NOT EXISTS `event_store_event_time_idx` ON `event_store` (`event_time`)',
-                'CREATE TABLE IF NOT EXISTS `event_store_identifiers` (`sequence` INTEGER NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL)',
+                'CREATE TABLE IF NOT EXISTS `event_store_identifiers` (`sequence` INTEGER NOT NULL REFERENCES `event_store`(`sequence`), `name` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY (`sequence`, `name`, `value`)) WITHOUT ROWID',
                 'CREATE INDEX IF NOT EXISTS `event_store_identifiers_name_value_idx` ON `event_store_identifiers` (`name`, `value`, `sequence`)',
-                'CREATE TABLE IF NOT EXISTS `event_store_metadata` (`sequence` INTEGER NOT NULL, `name` TEXT NOT NULL, `value` TEXT NOT NULL)',
+                'CREATE TABLE IF NOT EXISTS `event_store_metadata` (`sequence` INTEGER NOT NULL REFERENCES `event_store`(`sequence`), `name` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY (`sequence`, `name`, `value`)) WITHOUT ROWID',
                 'CREATE INDEX IF NOT EXISTS `event_store_metadata_name_value_idx` ON `event_store_metadata` (`name`, `value`, `sequence`)',
             ],
         };
@@ -55,6 +56,92 @@ enum Driver: string
         SerializerInterface $metadataSerializer,
         callable $eventIdGenerator,
     ): array {
+        [$eventStatementAndValues, $identifierRows, $metadataRows] = $this->buildEventInsertParts(
+            $stream,
+            $concurrencyCheck,
+            $expectedSequence,
+            $eventNameResolver,
+            $eventSerializer,
+            $metadataSerializer,
+            $eventIdGenerator,
+        );
+
+        return [
+            $eventStatementAndValues,
+            $this->buildChildInsertStatementAndValues('event_store_identifiers', $identifierRows),
+            $this->buildChildInsertStatementAndValues('event_store_metadata', $metadataRows),
+        ];
+    }
+
+    public function buildEventInsertStatementAndValues(
+        RecordedEventStream $stream,
+        ?Query $concurrencyCheck,
+        ?int $expectedSequence,
+        EventNameResolverInterface $eventNameResolver,
+        SerializerInterface $eventSerializer,
+        SerializerInterface $metadataSerializer,
+        callable $eventIdGenerator,
+    ): array {
+        return $this->buildEventInsertParts(
+            $stream,
+            $concurrencyCheck,
+            $expectedSequence,
+            $eventNameResolver,
+            $eventSerializer,
+            $metadataSerializer,
+            $eventIdGenerator,
+        );
+    }
+
+    public function resolveInsertedSequences(int $lastInsertId, int $count): array
+    {
+        return match ($this) {
+            self::MYSQL => range($lastInsertId, $lastInsertId + $count - 1),
+            self::SQLITE => range($lastInsertId - $count + 1, $lastInsertId),
+        };
+    }
+
+    public function buildChildInsertStatementsFromSequences(string $tableName, array $rows, array $sequences): array
+    {
+        if (!count($rows)) {
+            return [];
+        }
+
+        $maxRowsPerChunk = intdiv(self::MAX_VARIABLES, 3);
+        $statements = [];
+
+        foreach (array_chunk($rows, $maxRowsPerChunk) as $chunk) {
+            $values = [];
+            $valuePlaceholders = [];
+            foreach ($chunk as [$index, , $name, $value]) {
+                $valuePlaceholders[] = '(?, ?, ?)';
+                $values[] = $sequences[$index];
+                $values[] = $name;
+                $values[] = $value;
+            }
+
+            $statements[] = [
+                sprintf(
+                    'INSERT INTO `%s` (`sequence`, `name`, `value`) VALUES %s',
+                    $tableName,
+                    implode(', ', $valuePlaceholders),
+                ),
+                $values,
+            ];
+        }
+
+        return $statements;
+    }
+
+    private function buildEventInsertParts(
+        RecordedEventStream $stream,
+        ?Query $concurrencyCheck,
+        ?int $expectedSequence,
+        EventNameResolverInterface $eventNameResolver,
+        SerializerInterface $eventSerializer,
+        SerializerInterface $metadataSerializer,
+        callable $eventIdGenerator,
+    ): array {
         $values = [];
         $unionSelects = [];
         $identifierRows = [];
@@ -75,12 +162,12 @@ enum Driver: string
 
             foreach ($recordedEvent->getEvent()->getIdentifiers()->toArray() as $name => $value) {
                 foreach ((array) $value as $singleValue) {
-                    $identifierRows[] = [$eventUid, $name, $singleValue];
+                    $identifierRows[] = [$index, $eventUid, $name, $singleValue];
                 }
             }
 
             foreach ($recordedEvent->getMetadata()->toArray() as $name => $value) {
-                $metadataRows[] = [$eventUid, $name, $value];
+                $metadataRows[] = [$index, $eventUid, $name, $value];
             }
         }
         $unionSelects = implode(' UNION ', $unionSelects) . ' ORDER BY `union_index` ASC';
@@ -95,11 +182,7 @@ enum Driver: string
             $expectedSequence ? sprintf('= %d', $expectedSequence) : '>= 0',
         );
 
-        return [
-            [$eventStatement, $values],
-            $this->buildChildInsertStatementAndValues('event_store_identifiers', $identifierRows),
-            $this->buildChildInsertStatementAndValues('event_store_metadata', $metadataRows),
-        ];
+        return [[$eventStatement, $values], $identifierRows, $metadataRows];
     }
 
     private function buildChildInsertStatementAndValues(string $tableName, array $rows): ?array
@@ -110,7 +193,7 @@ enum Driver: string
 
         $values = [];
         $unionSelects = [];
-        foreach ($rows as [$eventUid, $name, $value]) {
+        foreach ($rows as [, $eventUid, $name, $value]) {
             $unionSelects[] = 'SELECT ? `col1`, ? `col2`, ? `col3`';
             $values[] = $eventUid;
             $values[] = $name;
