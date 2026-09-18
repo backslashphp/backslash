@@ -10,6 +10,7 @@ use Backslash\Shared\EventStore\TestAdapter;
 use Backslash\Shared\Model\StudentRegistrationModel;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class PdoTransactionRepositoryMiddlewareTest extends TestCase
 {
@@ -148,5 +149,101 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
             ['beginTransaction', 'rollBack', 'beginTransaction', 'commit'],
             $pdo->getCalls(),
         );
+    }
+
+    #[Test]
+    public function it_acquires_and_releases_a_lock_around_the_transaction_on_mysql(): void
+    {
+        $pdo = new TestPdo(mysql: true);
+        $repository = new Repository(new EventStore(new TestAdapter()), new CascadingTestEventBus());
+        $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
+
+        $model = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
+        $model->register('1', 'John');
+        $repository->storeChanges($model);
+
+        $this->assertEquals(
+            ['GET_LOCK(backslash)', 'beginTransaction', 'commit', 'RELEASE_LOCK(backslash)'],
+            $pdo->getCalls(),
+        );
+    }
+
+    #[Test]
+    public function it_releases_the_lock_after_rollback_on_mysql(): void
+    {
+        $pdo = new TestPdo(mysql: true);
+        $eventBus = new CascadingTestEventBus();
+        $eventBus->onPublish = function (): void {
+            throw new TestException('Something went wrong');
+        };
+        $repository = new Repository(new EventStore(new TestAdapter()), $eventBus);
+        $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
+
+        $model = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
+        $model->register('1', 'John');
+
+        try {
+            $repository->storeChanges($model);
+            $this->fail('Expected exception was not thrown');
+        } catch (TestException $e) {
+            $this->assertEquals('Something went wrong', $e->getMessage());
+        }
+
+        $this->assertEquals(
+            ['GET_LOCK(backslash)', 'beginTransaction', 'rollBack', 'RELEASE_LOCK(backslash)'],
+            $pdo->getCalls(),
+        );
+    }
+
+    #[Test]
+    public function it_does_not_acquire_a_lock_on_nested_store_changes_on_mysql(): void
+    {
+        $pdo = new TestPdo(mysql: true);
+        $eventBus = new CascadingTestEventBus();
+        $repository = new Repository(new EventStore(new TestAdapter()), $eventBus);
+        $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
+
+        $modelA = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
+        $modelA->register('1', 'John');
+
+        $modelB = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('2'));
+        $modelB->register('2', 'Jane');
+
+        $triggered = false;
+        $eventBus->onPublish = function () use ($repository, $modelB, &$triggered): void {
+            if (!$triggered) {
+                $triggered = true;
+                $repository->storeChanges($modelB);
+            }
+        };
+
+        $repository->storeChanges($modelA);
+
+        // A single GET_LOCK/RELEASE_LOCK pair, even though storeChanges() was called twice.
+        $this->assertEquals(
+            ['GET_LOCK(backslash)', 'beginTransaction', 'commit', 'RELEASE_LOCK(backslash)'],
+            $pdo->getCalls(),
+        );
+    }
+
+    #[Test]
+    public function it_throws_when_the_lock_cannot_be_acquired_on_mysql(): void
+    {
+        $pdo = new TestPdo(mysql: true, getLockResult: 0);
+        $repository = new Repository(new EventStore(new TestAdapter()), new CascadingTestEventBus());
+        $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
+
+        $model = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
+        $model->register('1', 'John');
+
+        try {
+            $repository->storeChanges($model);
+            $this->fail('Expected exception was not thrown');
+        } catch (RuntimeException $e) {
+            $this->assertEquals('Unable to acquire the "backslash" lock.', $e->getMessage());
+        }
+
+        $this->assertEquals(['GET_LOCK(backslash)'], $pdo->getCalls());
+        $this->assertFalse($pdo->inTransaction());
     }
 }

@@ -12,7 +12,14 @@ use RuntimeException;
 class TestPdo implements PdoInterface
 {
     private bool $inTransaction = false;
+
     private array $calls = [];
+
+    public function __construct(
+        private readonly bool $mysql = false,
+        private readonly int|null $getLockResult = 1,
+    ) {
+    }
 
     public static function getAvailableDrivers(): array
     {
@@ -67,6 +74,9 @@ class TestPdo implements PdoInterface
 
     public function getAttribute(int $attribute): mixed
     {
+        if ($attribute === PDO::ATTR_DRIVER_NAME) {
+            return $this->mysql ? 'mysql' : null;
+        }
         return null;
     }
 
@@ -77,6 +87,17 @@ class TestPdo implements PdoInterface
 
     public function prepare(string $statement, array $driverOptions = []): PDOStatement|bool
     {
+        if (str_contains($statement, 'GET_LOCK')) {
+            return new TestLockStatement(
+                fn (?array $params) => $this->calls[] = 'GET_LOCK(' . $params[0] . ')',
+                $this->getLockResult,
+            );
+        }
+        if (str_contains($statement, 'RELEASE_LOCK')) {
+            return new TestLockStatement(
+                fn (?array $params) => $this->calls[] = 'RELEASE_LOCK(' . $params[0] . ')',
+            );
+        }
         return false;
     }
 
