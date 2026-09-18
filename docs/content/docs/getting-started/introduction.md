@@ -21,8 +21,8 @@ that remains true to the core principles of the pattern.
 **Dynamic consistency boundaries.** Define which events matter for each decision. No fixed aggregates; just queries that
 fetch exactly what you need.
 
-**Built-in persistence.** PDO-compatible adapters for storing events and projections are included: the event store
-requires SQLite, while projections support MySQL and SQLite.
+**Built-in persistence.** PDO-compatible adapters for storing events and projections are included. Supports MySQL and
+SQLite out of the box.
 
 **Synchronous projections.** Projections are updated immediately within the same transaction as command execution,
 ensuring read-your-writes consistency.
@@ -33,7 +33,7 @@ custom setup.
 **Event replay and projection rebuilding.** Reconstruct projections from scratch by replaying historical events,
 enabling schema changes and bug fixes.
 
-**Optimistic concurrency control.** Prevent race conditions with built-in sequence checking that detects concurrent
+**Optimistic concurrency control.** Prevent race conditions with built-in version checking that detects concurrent
 modifications.
 
 **Extensible through middleware.** Add logging, validation, transactions, or any cross-cutting concern by wrapping core

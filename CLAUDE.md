@@ -10,7 +10,7 @@
 
 - **Framework-agnostic**: Compatible with Laravel, Symfony, Slim, or standalone
 - **Production-tested**: Used in production for 7+ years at the First Nations of Quebec and Labrador Health and Social Services Commission
-- **PHP 8.2+** with PDO support (SQLite for the event store; MySQL or SQLite for projections)
+- **PHP 8.2+** with PDO support (MySQL/SQLite)
 - **Open-source** under MIT license
 - **Zero external framework dependencies**
 
@@ -96,7 +96,7 @@ EventBus.publish() → EventHandlers (Projectors)
 
 **`PdoEventStore/`** - Database-backed EventStore implementation
 - `PdoEventStoreAdapter.php` - PDO implementation with concurrency control
-- `Driver.php` - SQLite-specific SQL generation
+- `Driver.php` - Driver abstraction (MySQL, SQLite)
 - `JsonEventSerializer.php` - JSON event serialization
 - `JsonMetadataSerializer.php` - Metadata serialization
 - `QueryToWhereClause.php` - Converts queries to SQL WHERE clauses
@@ -508,13 +508,6 @@ Backslash uses **optimistic locking** to prevent race conditions:
 2. Before append, the query is re-executed to detect concurrent modifications
 3. If the stream was modified by another process, `ConcurrencyException` is thrown
 4. Application can implement retry logic
-
-`PdoEventStoreAdapter` only supports SQLite. Its conditional append (`INSERT ... SELECT`
-gated on `MAX(sequence)`) relies on no explicit row locking, which SQLite's single-writer
-model makes safe by construction. Under MySQL/InnoDB's default `REPEATABLE READ` isolation,
-two concurrent transactions could both observe a stale `MAX(sequence)` and both succeed,
-defeating the concurrency check. `Driver::from()` throws a `ValueError` for any non-SQLite
-PDO driver.
 
 ```php
 try {
