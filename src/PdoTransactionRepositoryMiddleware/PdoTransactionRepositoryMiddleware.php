@@ -17,6 +17,9 @@ final class PdoTransactionRepositoryMiddleware implements MiddlewareInterface
 {
     private const LOCK_NAME = 'backslash';
 
+    // MariaDB rejects a negative GET_LOCK() timeout (unlike MySQL), so this stands in for "wait forever".
+    private const LOCK_TIMEOUT = 2147483647;
+
     private PdoInterface $pdo;
 
     private int $nestedLevels;
@@ -95,7 +98,7 @@ final class PdoTransactionRepositoryMiddleware implements MiddlewareInterface
 
     private function acquireLock(): void
     {
-        $statement = $this->pdo->prepare('SELECT GET_LOCK(?, -1)');
+        $statement = $this->pdo->prepare('SELECT GET_LOCK(?, ' . self::LOCK_TIMEOUT . ')');
         $statement->execute([self::LOCK_NAME]);
         if ((int) $statement->fetchColumn() !== 1) {
             throw new RuntimeException('Unable to acquire the "' . self::LOCK_NAME . '" lock.');
