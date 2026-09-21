@@ -10,7 +10,7 @@ use Backslash\EventStore\Query\Query;
 use Backslash\Model\ModelInterface;
 use RuntimeException;
 
-final class DefaultCoreStrategy implements CoreStrategyInterface
+final class AppendThenPublishAdapter implements AdapterInterface
 {
     private EventStoreInterface $eventStore;
 

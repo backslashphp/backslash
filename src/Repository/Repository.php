@@ -9,16 +9,16 @@ use Backslash\Model\ModelInterface;
 
 final class Repository implements RepositoryInterface
 {
-    private DefaultCoreStrategy $core;
+    private AdapterInterface $adapter;
 
     /** @var MiddlewareInterface[] */
     private array $middlewares;
 
     private RepositoryInterface $chain;
 
-    public function __construct(CoreStrategyInterface $core)
+    public function __construct(AdapterInterface $adapter)
     {
-        $this->core = $core;
+        $this->adapter = $adapter;
         $this->middlewares = [];
         $this->chainMiddlewares();
     }
@@ -59,7 +59,7 @@ final class Repository implements RepositoryInterface
                 $item,
                 $carry,
             ),
-            $this->core,
+            $this->adapter,
         );
     }
 }

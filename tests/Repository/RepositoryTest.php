@@ -41,7 +41,7 @@ class RepositoryTest extends TestCase
         $this->testEventBusMiddleware = new TestEventBusMiddleware();
         $eventBus = new EventBus();
         $eventBus->addMiddleware($this->testEventBusMiddleware);
-        $this->repository = new Repository(new DefaultCoreStrategy(new EventStore($adapter), $eventBus));
+        $this->repository = new Repository(new AppendThenPublishAdapter(new EventStore($adapter), $eventBus));
     }
 
     #[Test]

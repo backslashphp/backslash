@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Backslash\PdoTransactionRepositoryMiddleware;
 
 use Backslash\EventStore\EventStore;
-use Backslash\Repository\DefaultCoreStrategy;
+use Backslash\Repository\AppendThenPublishAdapter;
 use Backslash\Repository\Repository;
 use Backslash\Shared\EventStore\TestAdapter;
 use Backslash\Shared\Model\StudentRegistrationModel;
@@ -19,7 +19,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
     public function it_begins_and_commits_transaction_on_successful_store_changes(): void
     {
         $pdo = new TestPdo();
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), new CascadingTestEventBus()));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), new CascadingTestEventBus()));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $model = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
@@ -38,7 +38,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
         $eventBus->onPublish = function (): void {
             throw new TestException('Something went wrong');
         };
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), $eventBus));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), $eventBus));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $model = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
@@ -60,7 +60,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
     {
         $pdo = new TestPdo();
         $eventBus = new CascadingTestEventBus();
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), $eventBus));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), $eventBus));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $modelA = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
@@ -90,7 +90,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
     public function it_opens_a_separate_transaction_for_independent_store_changes(): void
     {
         $pdo = new TestPdo();
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), new CascadingTestEventBus()));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), new CascadingTestEventBus()));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $modelA = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
@@ -110,7 +110,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
     {
         $pdo = new TestPdo();
         $eventBus = new CascadingTestEventBus();
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), $eventBus));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), $eventBus));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $modelA = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
@@ -156,7 +156,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
     public function it_acquires_and_releases_a_lock_around_the_transaction_on_mysql(): void
     {
         $pdo = new TestPdo(mysql: true);
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), new CascadingTestEventBus()));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), new CascadingTestEventBus()));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $model = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
@@ -177,7 +177,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
         $eventBus->onPublish = function (): void {
             throw new TestException('Something went wrong');
         };
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), $eventBus));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), $eventBus));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $model = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
@@ -201,7 +201,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
     {
         $pdo = new TestPdo(mysql: true);
         $eventBus = new CascadingTestEventBus();
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), $eventBus));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), $eventBus));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $modelA = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
@@ -231,7 +231,7 @@ class PdoTransactionRepositoryMiddlewareTest extends TestCase
     public function it_throws_when_the_lock_cannot_be_acquired_on_mysql(): void
     {
         $pdo = new TestPdo(mysql: true, getLockResult: 0);
-        $repository = new Repository(new DefaultCoreStrategy(new EventStore(new TestAdapter()), new CascadingTestEventBus()));
+        $repository = new Repository(new AppendThenPublishAdapter(new EventStore(new TestAdapter()), new CascadingTestEventBus()));
         $repository->addMiddleware(new PdoTransactionRepositoryMiddleware($pdo));
 
         $model = $repository->loadModel(StudentRegistrationModel::class, StudentRegistrationModel::getQuery('1'));
