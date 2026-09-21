@@ -16,6 +16,7 @@ use Backslash\PdoEventStore\JsonMetadataSerializer;
 use Backslash\PdoEventStore\PdoEventStoreAdapter;
 use Backslash\ProjectionStore\InMemoryProjectionStoreAdapter;
 use Backslash\ProjectionStore\ProjectionStore;
+use Backslash\Repository\DefaultCoreStrategy;
 use Backslash\Repository\Repository;
 use Backslash\Repository\RepositoryInterface;
 use PDO;
@@ -61,7 +62,7 @@ final class Scenario
         $this->projectionStoreMiddleware = new ScenarioProjectionStoreMiddleware();
         $this->projectionStore = $projectionStore ?? new ProjectionStore(new InMemoryProjectionStoreAdapter());
         $this->projectionStore->addInnerMiddleware($this->projectionStoreMiddleware);
-        $this->repository = $repository ?? new Repository($this->eventStore, $this->eventBus);
+        $this->repository = $repository ?? new Repository(new DefaultCoreStrategy($this->eventStore, $this->eventBus));
     }
 
     public function play(Play ...$plays): void

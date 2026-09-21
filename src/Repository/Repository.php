@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 namespace Backslash\Repository;
 
-use Backslash\EventBus\EventBusInterface;
-use Backslash\EventStore\EventStoreInterface;
 use Backslash\EventStore\Query\Query;
 use Backslash\Model\ModelInterface;
 
 final class Repository implements RepositoryInterface
 {
-    private Core $core;
+    private DefaultCoreStrategy $core;
 
     /** @var MiddlewareInterface[] */
     private array $middlewares;
 
     private RepositoryInterface $chain;
 
-    public function __construct(EventStoreInterface $eventStore, EventBusInterface $eventBus)
+    public function __construct(CoreStrategyInterface $core)
     {
-        $this->core = new Core($eventStore, $eventBus);
+        $this->core = $core;
         $this->middlewares = [];
         $this->chainMiddlewares();
     }
