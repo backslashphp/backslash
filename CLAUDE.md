@@ -47,8 +47,13 @@ EventBus.publish() → EventHandlers (Projectors)
 - `HandleCommandTrait.php` - Auto-routes to `handle{CommandName}` methods
 
 **`Repository/`** - Loading and storing models
-- `Repository.php` - Repository with middleware
-- `Core.php` - Core implementation (event loading, model recreation, persistence)
+- `Repository.php` - Public facade; chains middlewares (LIFO) in front of the adapter
+- `RepositoryInterface.php` - Contract for loading/storing models
+- `AdapterInterface.php` - Marker interface for the terminal adapter (end of the middleware chain)
+- `AppendThenPublishAdapter.php` - Default adapter: fetches/replays events, appends changes with
+  optimistic locking, then publishes them
+- `MiddlewareInterface.php` - Contract for repository middlewares
+- `MiddlewareDelegator.php` - Wires a middleware to the next link in the chain
 
 **`Model/`** - Base classes for models
 - `AbstractModel.php` - Base class for domain models

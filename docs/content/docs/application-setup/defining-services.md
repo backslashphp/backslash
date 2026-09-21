@@ -200,12 +200,15 @@ Define the Repository with its dependencies:
 ```php
 use Backslash\Repository\Repository;
 use Backslash\Repository\RepositoryInterface;
+use Backslash\Repository\AppendThenPublishAdapter;
 use Backslash\PdoTransactionRepositoryMiddleware\PdoTransactionRepositoryMiddleware;
 
 RepositoryInterface::class => function (ContainerInterface $c) {
     $repository = new Repository(
-        $c->get(EventStoreInterface::class),
-        $c->get(EventBusInterface::class),
+        new AppendThenPublishAdapter(
+            $c->get(EventStoreInterface::class),
+            $c->get(EventBusInterface::class),
+        )
     );
 
     $repository->addMiddleware(
