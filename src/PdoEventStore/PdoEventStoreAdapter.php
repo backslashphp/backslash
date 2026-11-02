@@ -61,13 +61,15 @@ final class PdoEventStoreAdapter implements AdapterInterface
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($whereClause->getValues());
 
-        $stream = new StoredRecordedEventStream();
+        $recordedEvents = [];
+        $highestSequence = 0;
         while ($row = $stmt->fetch()) {
-            $stream = $stream
-                ->withRecordedEvents($this->buildEventFromRow($row))
-                ->withHighestSequence((int) $row['sequence']);
+            $recordedEvents[] = $this->buildEventFromRow($row);
+            $highestSequence = (int) $row['sequence'];
         }
-        return $stream;
+
+        $stream = new StoredRecordedEventStream(...$recordedEvents);
+        return $stream->withHighestSequence($highestSequence);
     }
 
     public function append(RecordedEventStream $stream, ?Query $concurrencyCheck, ?int $expectedSequence): void
