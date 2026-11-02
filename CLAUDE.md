@@ -362,23 +362,26 @@ class StudentProjector implements EventHandlerInterface
 }
 ```
 
-### 3. Repository with Caching
+### 3. Repository Load Tracking
 
-The repository caches loaded models and tracks queries for concurrency control.
+The repository does not cache models. Each `loadModel()` call fetches events from the event store and returns a new
+instance. What `AppendThenPublishAdapter` remembers, per model instance, is the query and the highest sequence seen at
+load time, so that `storeChanges()` can enforce optimistic locking.
 
 ```php
-// First load
+// Each load hits the event store and returns a new instance
 $student = $repository->loadModel(Student::class, $query);
+$otherStudent = $repository->loadModel(Student::class, $query); // $otherStudent !== $student
 
-// Second load with same query = returns cache
-$sameStudent = $repository->loadModel(Student::class, $query);
-
-// Changes are tracked
+// Changes are tracked on the instance
 $student->register($id, $name);
 
-// Storage with optimistic locking
+// Appends with the query and sequence remembered at load time, then publishes
 $repository->storeChanges($student);
 ```
+
+After `storeChanges()`, the adapter forgets the instance: storing it again, or storing a model that was not loaded
+through the repository, throws a `RuntimeException`. Load the model again for a new decision.
 
 ### 4. Event Replay
 
