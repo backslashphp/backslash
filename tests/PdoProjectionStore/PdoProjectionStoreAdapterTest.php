@@ -28,6 +28,20 @@ class PdoProjectionStoreAdapterTest extends TestCase
     }
 
     #[Test]
+    public function it_finds_projections_by_class(): void
+    {
+        $store = $this->createStore();
+        $store->store(new TestProjection('123'));
+        $store->store(new TestProjection('234'));
+        $store->store(new TestBarProjection('345'));
+        $store->commit();
+
+        $projections = iterator_to_array($store->getAdapter()->findBy(TestProjection::class), false);
+
+        $this->assertEquals([new TestProjection('123'), new TestProjection('234')], $projections);
+    }
+
+    #[Test]
     public function it_purges_projections_by_class(): void
     {
         $store = $this->createStore();

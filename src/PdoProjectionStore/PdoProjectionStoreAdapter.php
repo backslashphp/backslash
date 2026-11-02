@@ -69,8 +69,8 @@ final class PdoProjectionStoreAdapter implements AdapterInterface
         $query->bindColumn(1, $projectionPayload, PDO::PARAM_LOB);
 
         while ($query->fetch(PDO::FETCH_BOUND)) {
-            $projectionPayload = stream_get_contents($projectionPayload);
-            $projection = $this->serializer->deserialize($projectionPayload);
+            $payload = is_resource($projectionPayload) ? stream_get_contents($projectionPayload) : $projectionPayload;
+            $projection = $this->serializer->deserialize($payload);
             yield $projection;
         }
     }
