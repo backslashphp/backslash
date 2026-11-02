@@ -21,6 +21,7 @@ use Backslash\Repository\Repository;
 use Backslash\Repository\RepositoryInterface;
 use PDO;
 use Ramsey\Uuid\Uuid;
+use RuntimeException;
 
 final class Scenario
 {
@@ -49,6 +50,12 @@ final class Scenario
     ) {
         $this->eventBus = $eventBus ?? new EventBus();
         $this->dispatcher = $dispatcher ?? new Dispatcher();
+        if ($eventStore === null && !class_exists(Uuid::class)) {
+            throw new RuntimeException(
+                'Scenario requires ramsey/uuid when no event store is provided. '
+                . 'Install it with "composer require --dev ramsey/uuid" or pass your own event store.',
+            );
+        }
         $eventNameResolver = new MatchingClassEventNameResolverAdapter();
         $this->eventStore = $eventStore ?? new EventStore(new PdoEventStoreAdapter(
             new PdoProxy(fn () => new PDO('sqlite::memory:')),
