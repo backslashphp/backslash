@@ -55,6 +55,6 @@ final class UnitOfWork
     public function hasRemoved(string $id, string $class): bool
     {
         $descriptor = new ProjectionDescriptor($id, $class);
-        return isset($this->store[$descriptor->getKey()]);
+        return isset($this->remove[$descriptor->getKey()]);
     }
 }

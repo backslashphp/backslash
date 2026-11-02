@@ -30,6 +30,20 @@ class TransactionTest extends TestCase
     }
 
     #[Test]
+    public function it_hides_committed_projection_removed_in_unit_of_work(): void
+    {
+        $store = new ProjectionStore(new InMemoryProjectionStoreAdapter());
+        $store->store(new TestFooProjection('123'));
+        $store->commit();
+
+        $store->remove('123', TestFooProjection::class);
+
+        $this->assertFalse($store->has('123', TestFooProjection::class));
+        $this->expectException(ProjectionNotFoundException::class);
+        $store->find('123', TestFooProjection::class);
+    }
+
+    #[Test]
     public function it_resets_unit_of_work_after_commit(): void
     {
         $adapter = new TestInMemoryProjectionStoreAdapter();
