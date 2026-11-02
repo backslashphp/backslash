@@ -107,6 +107,32 @@ class PdoEventStoreTest extends TestCase
     }
 
     #[Test]
+    public function it_prevents_concurrent_writes_on_an_empty_boundary(): void
+    {
+        $query = new Query(Identifier::is('studentId', '1'));
+        $storedEvents = $this->store->fetch($query);
+        $this->assertSame(0, $storedEvents->getHighestSequence());
+
+        $this->store->append(
+            new RecordedEventStream(
+                RecordedEvent::create(new StudentRegisteredEvent('1', 'John'), new Metadata(), Clock::now()),
+            ),
+            $query,
+            $storedEvents->getHighestSequence(),
+        );
+
+        $this->expectException(ConcurrencyException::class);
+
+        $this->store->append(
+            new RecordedEventStream(
+                RecordedEvent::create(new StudentRegisteredEvent('1', 'Joe'), new Metadata(), Clock::now()),
+            ),
+            $query,
+            $storedEvents->getHighestSequence(),
+        );
+    }
+
+    #[Test]
     public function it_finds_and_inspects_events(): void
     {
         $this->store->append(

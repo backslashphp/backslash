@@ -179,7 +179,7 @@ enum Driver: string
             'INSERT INTO `event_store` (`event_uid`, `event_name`, `event_payload`, `event_metadata`, `event_time`) SELECT `col1`, `col2`, `col3`, `col4`, `col5` FROM (%s) `union_selects` WHERE (SELECT IFNULL(MAX(`sequence`), 0) FROM `event_store` WHERE 1=1 AND %s) %s',
             $unionSelects,
             $concurrencyCheckWhere->getStatement(),
-            $expectedSequence ? sprintf('= %d', $expectedSequence) : '>= 0',
+            $expectedSequence !== null ? sprintf('= %d', $expectedSequence) : '>= 0',
         );
 
         return [[$eventStatement, $values], $identifierRows, $metadataRows];
